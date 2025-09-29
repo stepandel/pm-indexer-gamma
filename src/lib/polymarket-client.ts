@@ -1,6 +1,6 @@
 import { config } from '../config/config';
 import { logger } from './logger';
-import type { Market } from '../types/market';
+import type { Market, MarketEvent } from '../types/market';
 
 const request = async <T>(baseUrl: string, path: string, params?: Record<string, any>): Promise<T> => {
   const url = new URL(path, baseUrl);
@@ -41,6 +41,47 @@ const request = async <T>(baseUrl: string, path: string, params?: Record<string,
   }
 };
 
+const fetchBatch = async <T>(
+  fetchFn: (params: any) => Promise<T[]>,
+  params: Record<string, any> = {},
+  limit: number,
+  offset: number
+): Promise<T[]> => {
+  return await fetchFn({
+    ...params,
+    limit,
+    offset,
+  });
+};
+
+async function* batchGenerator<T>(fetchFn: (params: any) => Promise<T[]>, params: Record<string, any> = {}, limit: number = 500): AsyncGenerator<T[], void, unknown> {
+  let offset = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    try {
+      const batch = await fetchBatch(fetchFn, {
+        ...params,
+        active: true,
+        start_date_min: '2025-09-25'
+      }, limit, offset);
+
+      if (batch.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      logger.debug(`Fetched batch: ${batch.length} markets at offset ${offset}`);
+      yield batch;
+
+      offset += batch.length;
+    } catch (error) {
+      logger.error(`Failed to fetch batch at offset ${offset}`, error);
+      throw error;
+    }
+  }
+}
+
 export const createPolymarketClient = (baseUrl: string = config.polymarket.apiUrl) => {
   const getMarkets = async (params?: {
     limit?: number;
@@ -57,39 +98,18 @@ export const createPolymarketClient = (baseUrl: string = config.polymarket.apiUr
     }
   };
 
-
-  const fetchBatch = async (limit: number, offset: number): Promise<Market[]> => {
-    return await getMarkets({
-      active: true,
-      limit,
-      offset,
-      start_date_min: '2025-09-25'
-    });
-  };
-
-  async function* batchGenerator(limit: number = 500): AsyncGenerator<Market[], void, unknown> {
-    let offset = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      try {
-        const batch = await fetchBatch(limit, offset);
-
-        if (batch.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        logger.debug(`Fetched batch: ${batch.length} markets at offset ${offset}`);
-        yield batch;
-
-        offset += batch.length;
-      } catch (error) {
-        logger.error(`Failed to fetch batch at offset ${offset}`, error);
-        throw error;
-      }
+  const getEvents = async (params?: {
+    limit?: number;
+    offset?: number;
+    active?: boolean;
+  }): Promise<MarketEvent[]> => {
+    try {
+      return await request<MarketEvent[]>(baseUrl, '/events', params);
+    } catch (error) {
+      logger.error('Failed to fetch events', error);
+      throw error;
     }
-  }
+  };
 
   const getActiveMarkets = async (): Promise<{ firstMarketId: string | null, lastMarketId: string | null, totalCount: number }> => {
     logger.debug('Fetching all active markets with pagination');
@@ -98,7 +118,7 @@ export const createPolymarketClient = (baseUrl: string = config.polymarket.apiUr
     let lastMarketId: string | null = null;
     let totalCount = 0;
 
-    for await (const batch of batchGenerator()) {
+    for await (const batch of batchGenerator(getMarkets)) {
       if (batch.length > 0) {
         if (firstMarketId === null) {
           firstMarketId = batch[0].id;
@@ -115,9 +135,34 @@ export const createPolymarketClient = (baseUrl: string = config.polymarket.apiUr
     return { firstMarketId, lastMarketId, totalCount };
   };
 
+  const getActiveEvents = async (): Promise<{ firstEventId: string | null, lastEventId: string | null, totalCount: number }> => {
+    logger.debug('Fetching all active events with pagination');
+
+    let firstEventId: string | null = null;
+    let lastEventId: string | null = null;
+    let totalCount = 0;
+
+    for await (const batch of batchGenerator(getEvents)) {
+      if (batch.length > 0) {
+        if (firstEventId === null) {
+          firstEventId = batch[0].id;
+          logger.info(`First event ID: ${firstEventId}`);
+        }
+        lastEventId = batch[batch.length - 1].id;
+        totalCount += batch.length;
+      }
+    }
+
+    logger.info(`Last event ID: ${lastEventId}`);
+    logger.info(`Total events processed: ${totalCount}`);
+
+    return { firstEventId, lastEventId, totalCount };
+  };
+
   return {
     getMarkets,
+    getEvents,
     getActiveMarkets,
-    batchGenerator
+    getActiveEvents,
   };
 };
