@@ -29,77 +29,12 @@ const fetchActiveMarkets = async (client: ReturnType<typeof createPolymarketClie
   }
 };
 
-
-const calculateStatisticsFromBatches = async (client: ReturnType<typeof createPolymarketClient>) => {
-  let totalVolume = 0;
-  let totalLiquidity = 0;
-  let totalMarkets = 0;
-  let activeMarkets = 0;
-  const topMarkets: Array<{ question: string; volume: number; liquidity: number; id: string }> = [];
-
-  for await (const batch of client.batchGenerator()) {
-    for (const market of batch) {
-      totalVolume += market.volumeNum || 0;
-      totalLiquidity += market.liquidityNum || 0;
-      totalMarkets++;
-
-      if (market.active) {
-        activeMarkets++;
-      }
-
-      if (market.volumeNum) {
-        topMarkets.push({
-          question: market.question,
-          volume: market.volumeNum,
-          liquidity: market.liquidityNum || 0,
-          id: market.id
-        });
-      }
-    }
-  }
-
-  // Sort and get top 5 by volume
-  const top5Markets = topMarkets
-    .sort((a, b) => b.volume - a.volume)
-    .slice(0, 5)
-    .map(m => ({
-      question: m.question,
-      volume: m.volume.toFixed(2),
-      liquidity: m.liquidity.toFixed(2),
-    }));
-
-  return {
-    totalMarkets,
-    activeMarkets,
-    totalVolume,
-    totalLiquidity,
-    topMarkets: top5Markets
-  };
-};
-
-const processData = async (marketInfo: { firstMarketId: string | null, lastMarketId: string | null, totalCount: number }, client: ReturnType<typeof createPolymarketClient>): Promise<void> => {
-  logger.debug('Processing indexed data');
-
-  const stats = await calculateStatisticsFromBatches(client);
-
-  logger.info('Market statistics', {
-    totalMarkets: stats.totalMarkets,
-    activeMarkets: stats.activeMarkets,
-    totalVolume: stats.totalVolume.toFixed(2),
-    totalLiquidity: stats.totalLiquidity.toFixed(2),
-  });
-
-  logger.info('Top 5 markets by volume', stats.topMarkets);
-};
-
 const runIndexer = async (client: ReturnType<typeof createPolymarketClient>, state: IndexerState): Promise<IndexerResult> => {
   const startTime = Date.now();
   logger.info('Starting Polymarket indexer run');
 
   try {
     const marketInfo = await fetchActiveMarkets(client, state);
-
-    await processData(marketInfo, client);
 
     const duration = Date.now() - startTime;
     logger.info(`Indexer run completed successfully in ${duration}ms`, {

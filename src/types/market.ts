@@ -4,6 +4,10 @@ export interface Market {
   conditionId?: string;
   slug: string;
   endDate?: string;
+  startDate?: string;
+  image?: string;
+  icon?: string;
+  description?: string;
   active: boolean;
   closed: boolean;
   archived: boolean;
@@ -13,8 +17,7 @@ export interface Market {
   volumeNum?: number;
   liquidity: string;
   liquidityNum?: number;
-  category?: string;
-  marketType?: string;
+  questionId?: string;
   createdAt: string;
   updatedAt: string;
 }
