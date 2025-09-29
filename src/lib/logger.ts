@@ -17,7 +17,7 @@ const parseLogLevel = (level: string): LogLevelType => {
     'error': LogLevel.ERROR,
   };
 
-  return levelMap[level.toLowerCase()] || LogLevel.INFO;
+  return levelMap[level.toLowerCase()] ?? LogLevel.INFO;
 };
 
 const getLevelName = (level: LogLevelType): string => {
