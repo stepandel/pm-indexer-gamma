@@ -1,0 +1,19 @@
+{
+  "name": "polymarket-indexer",
+  "version": "1.0.0",
+  "description": "Polymarket indexer that runs as a cron job on Railway",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.23",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.2"
+  }
+}
