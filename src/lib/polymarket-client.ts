@@ -61,7 +61,6 @@ export const createPolymarketClient = (baseUrl: string = config.polymarket.apiUr
   const fetchBatch = async (limit: number, offset: number): Promise<Market[]> => {
     return await getMarkets({
       active: true,
-      closed: false,
       limit,
       offset,
       start_date_min: '2025-09-25'
@@ -84,11 +83,7 @@ export const createPolymarketClient = (baseUrl: string = config.polymarket.apiUr
         logger.debug(`Fetched batch: ${batch.length} markets at offset ${offset}`);
         yield batch;
 
-        if (batch.length < limit) {
-          hasMore = false;
-        } else {
-          offset += limit;
-        }
+        offset += batch.length;
       } catch (error) {
         logger.error(`Failed to fetch batch at offset ${offset}`, error);
         throw error;
