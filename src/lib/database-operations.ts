@@ -1,7 +1,16 @@
 import { database } from './database';
 import { logger } from './logger';
-import type { MarketEventsInsert, MarketsInsert, MarketEventsDB, MarketsDB } from '../types/database';
-import type { MarketEvent, Market } from '../types/market';
+import type {
+  MarketEventsInsert,
+  MarketsInsert,
+  MarketEventsDB,
+  MarketsDB,
+  TagsInsert,
+  TagsDB,
+  MarketEventTagsInsert,
+  MarketTagsInsert
+} from '../types/database';
+import type { MarketEvent, Market, Tags } from '../types/market';
 
 const upsertMarketEvent = async (eventData: MarketEventsInsert): Promise<MarketEventsDB | null> => {
   if (!database) {
@@ -147,13 +156,27 @@ const transformMarketToDb = (market: Market, eventId?: string): MarketsInsert =>
   };
 };
 
-const saveEventWithMarkets = async (event: MarketEvent): Promise<{ event: MarketEventsDB | null; markets: MarketsDB[] }> => {
+const saveEventWithMarkets = async (event: MarketEvent): Promise<{ event: MarketEventsDB | null; markets: MarketsDB[]; tags: TagsDB[] }> => {
   const savedMarkets: MarketsDB[] = [];
+  const savedTags: TagsDB[] = [];
 
   try {
     // Save event first
     const eventData = transformEventToDb(event);
     const savedEvent = await upsertMarketEvent(eventData);
+
+    // Save tags and link them to the event
+    if (event.tags && event.tags.length > 0) {
+      for (const tag of event.tags) {
+        const tagData = transformTagToDb(tag);
+        const savedTag = await upsertTag(tagData);
+        if (savedTag) {
+          savedTags.push(savedTag);
+          // Link tag to event
+          await linkEventToTag(event.id, tag.id);
+        }
+      }
+    }
 
     // Save markets associated with this event
     if (event.markets && event.markets.length > 0) {
@@ -162,21 +185,106 @@ const saveEventWithMarkets = async (event: MarketEvent): Promise<{ event: Market
         const savedMarket = await upsertMarket(marketData);
         if (savedMarket) {
           savedMarkets.push(savedMarket);
+
+          // Link market to same tags as the event (markets inherit event tags)
+          if (event.tags && event.tags.length > 0) {
+            for (const tag of event.tags) {
+              await linkMarketToTag(market.id, tag.id);
+            }
+          }
         }
       }
     }
 
-    return { event: savedEvent, markets: savedMarkets };
+    return { event: savedEvent, markets: savedMarkets, tags: savedTags };
   } catch (error) {
-    logger.error('Failed to save event with markets', { eventId: event.id, error });
+    logger.error('Failed to save event with markets and tags', { eventId: event.id, error });
     throw error;
   }
+};
+
+const upsertTag = async (tagData: TagsInsert): Promise<TagsDB | null> => {
+  if (!database) {
+    logger.warn('Database not available, skipping tag upsert');
+    return null;
+  }
+
+  try {
+    const query = `
+      INSERT INTO tags (id, label, slug)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (id) DO UPDATE SET
+        label = EXCLUDED.label,
+        slug = EXCLUDED.slug,
+        updated_at = NOW()
+      RETURNING *;
+    `;
+
+    const values = [tagData.id, tagData.label, tagData.slug];
+    const result = await database.query(query, values);
+    return result.rows[0];
+  } catch (error) {
+    logger.error('Failed to upsert tag', { tagId: tagData.id, error });
+    throw error;
+  }
+};
+
+const linkEventToTag = async (eventId: string, tagId: string): Promise<void> => {
+  if (!database) {
+    logger.warn('Database not available, skipping event-tag link');
+    return;
+  }
+
+  try {
+    const query = `
+      INSERT INTO market_event_tags (market_event_id, tag_id)
+      VALUES ($1, $2)
+      ON CONFLICT (market_event_id, tag_id) DO NOTHING;
+    `;
+
+    await database.query(query, [eventId, tagId]);
+  } catch (error) {
+    logger.error('Failed to link event to tag', { eventId, tagId, error });
+    throw error;
+  }
+};
+
+const linkMarketToTag = async (marketId: string, tagId: string): Promise<void> => {
+  if (!database) {
+    logger.warn('Database not available, skipping market-tag link');
+    return;
+  }
+
+  try {
+    const query = `
+      INSERT INTO market_tags (market_id, tag_id)
+      VALUES ($1, $2)
+      ON CONFLICT (market_id, tag_id) DO NOTHING;
+    `;
+
+    await database.query(query, [marketId, tagId]);
+  } catch (error) {
+    logger.error('Failed to link market to tag', { marketId, tagId, error });
+    throw error;
+  }
+};
+
+const transformTagToDb = (tag: Tags): TagsInsert => {
+  return {
+    id: tag.id,
+    label: tag.label,
+    slug: tag.slug
+  };
 };
 
 export {
   upsertMarketEvent,
   upsertMarket,
+  upsertTag,
+  linkEventToTag,
+  linkMarketToTag,
   transformEventToDb,
   transformMarketToDb,
+  transformTagToDb,
   saveEventWithMarkets
 };

@@ -1,10 +1,17 @@
 // Auto-generated database types
-// Generated at: 2025-09-30T00:18:29.519Z
+// Generated at: 2025-09-30T22:49:00.733Z
 // Do not edit manually - run 'bun run scripts/generate-types.ts' to regenerate
 
 // Custom enums (define manually as needed)
 export type WinnerEnum = 'UNRESOLVED' | 'OUTCOME1' | 'OUTCOME2' | 'DRAW';
 
+
+// market_event_tags table
+export interface MarketEventTagsDB {
+  market_event_id: string;
+  tag_id: string;
+  created_at: Date;
+}
 
 // market_events table
 export interface MarketEventsDB {
@@ -21,6 +28,13 @@ export interface MarketEventsDB {
   liquidity: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+// market_tags table
+export interface MarketTagsDB {
+  market_id: string;
+  tag_id: string;
+  created_at: Date;
 }
 
 // markets table
@@ -64,6 +78,15 @@ export interface ParlayLegsDB {
   created_at: Date;
 }
 
+// tags table
+export interface TagsDB {
+  id: string;
+  label: string;
+  slug: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
 // user_balance table
 export interface UserBalanceDB {
   id: string;
@@ -74,9 +97,17 @@ export interface UserBalanceDB {
 }
 
 // Insert types (omit auto-generated fields)
+export type MarketEventTagsInsert = Omit<MarketEventTagsDB, 'created_at'> & {
+  created_at?: Date;
+};
+
 export type MarketEventsInsert = Omit<MarketEventsDB, 'created_at' | 'updated_at'> & {
   created_at?: Date;
   updated_at?: Date;
+};
+
+export type MarketTagsInsert = Omit<MarketTagsDB, 'created_at'> & {
+  created_at?: Date;
 };
 
 export type MarketsInsert = Omit<MarketsDB, 'created_at' | 'updated_at'> & {
@@ -94,6 +125,11 @@ export type ParlayLegsInsert = Omit<ParlayLegsDB, 'id' | 'created_at'> & {
   created_at?: Date;
 };
 
+export type TagsInsert = Omit<TagsDB, 'created_at' | 'updated_at'> & {
+  created_at?: Date;
+  updated_at?: Date;
+};
+
 export type UserBalanceInsert = Omit<UserBalanceDB, 'id' | 'created_at' | 'updated_at'> & {
   id?: string;
   created_at?: Date;
@@ -101,8 +137,14 @@ export type UserBalanceInsert = Omit<UserBalanceDB, 'id' | 'created_at' | 'updat
 };
 
 // Update types (partial updates)
+export type MarketEventTagsUpdate = Partial<Omit<MarketEventTagsDB, 'id' | 'created_at'>> & {
+};
+
 export type MarketEventsUpdate = Partial<Omit<MarketEventsDB, 'id' | 'created_at'>> & {
   updated_at?: Date;
+};
+
+export type MarketTagsUpdate = Partial<Omit<MarketTagsDB, 'id' | 'created_at'>> & {
 };
 
 export type MarketsUpdate = Partial<Omit<MarketsDB, 'id' | 'created_at'>> & {
@@ -113,6 +155,10 @@ export type ParlayBetsUpdate = Partial<Omit<ParlayBetsDB, 'id' | 'created_at'>> 
 };
 
 export type ParlayLegsUpdate = Partial<Omit<ParlayLegsDB, 'id' | 'created_at'>> & {
+};
+
+export type TagsUpdate = Partial<Omit<TagsDB, 'id' | 'created_at'>> & {
+  updated_at?: Date;
 };
 
 export type UserBalanceUpdate = Partial<Omit<UserBalanceDB, 'id' | 'created_at'>> & {

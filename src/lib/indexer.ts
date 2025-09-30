@@ -37,6 +37,7 @@ const fetchActiveEvents = async (client: ReturnType<typeof createPolymarketClien
   try {
     let totalEvents = 0;
     let totalMarkets = 0;
+    let totalTags = 0;
     let firstEventId = '';
     let lastEventId = '';
 
@@ -47,10 +48,13 @@ const fetchActiveEvents = async (client: ReturnType<typeof createPolymarketClien
         lastEventId = event.id;
         totalEvents++;
 
-        // Save event with its markets to database
+        // Save event with its markets and tags to database
         const result = await saveEventWithMarkets(event);
         if (result.markets) {
           totalMarkets += result.markets.length;
+        }
+        if (result.tags) {
+          totalTags += result.tags.length;
         }
       }
 
@@ -58,7 +62,7 @@ const fetchActiveEvents = async (client: ReturnType<typeof createPolymarketClien
     }
 
     if (totalEvents > 0) {
-      logger.info(`Found and saved ${totalEvents} active events with ${totalMarkets} markets`);
+      logger.info(`Found and saved ${totalEvents} events with ${totalMarkets} markets and ${totalTags} tags`);
       logger.info(`First event ID: ${firstEventId}`);
       logger.info(`Last event ID: ${lastEventId}`);
     }
