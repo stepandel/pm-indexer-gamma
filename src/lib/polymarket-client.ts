@@ -135,28 +135,10 @@ export const createPolymarketClient = (baseUrl: string = config.polymarket.apiUr
     return { firstMarketId, lastMarketId, totalCount };
   };
 
-  const getActiveEvents = async (): Promise<{ firstEventId: string | null, lastEventId: string | null, totalCount: number }> => {
+  const getActiveEvents = async function* (): AsyncGenerator<MarketEvent[], void, unknown> {
     logger.debug('Fetching all active events with pagination');
 
-    let firstEventId: string | null = null;
-    let lastEventId: string | null = null;
-    let totalCount = 0;
-
-    for await (const batch of batchGenerator(getEvents)) {
-      if (batch.length > 0) {
-        if (firstEventId === null) {
-          firstEventId = batch[0].id;
-          logger.info(`First event ID: ${firstEventId}`);
-        }
-        lastEventId = batch[batch.length - 1].id;
-        totalCount += batch.length;
-      }
-    }
-
-    logger.info(`Last event ID: ${lastEventId}`);
-    logger.info(`Total events processed: ${totalCount}`);
-
-    return { firstEventId, lastEventId, totalCount };
+    yield* batchGenerator(getEvents, { active: true });
   };
 
   return {

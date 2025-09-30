@@ -20,17 +20,45 @@ export interface Market {
   questionId?: string;
   createdAt: string;
   updatedAt: string;
+  clobRewards: Rewards[];
+  rewardsMinSize: number;
+  rewardsMaxSpread: number;
+  spread: number;
 }
 
 export interface MarketEvent {
   id: string;
-  title: string;
   slug: string;
+  title: string;
+  description: string;
+  image: string;
+  icon: string;
+  active: boolean;
+  closed: boolean;
+  restricted: boolean;
+  volume: string;
+  liquidity: string;
   markets: Market[];
   createdAt: string;
   updatedAt: string;
+  tags: Tags[];
 }
 
+export interface Tags {
+  id: string;
+  label: string;
+  slug: string;
+}
+
+export interface Rewards {
+  id: string;
+  conditionId: string;
+  assertAddress: string;
+  rewardAmount: string;
+  rewardsDailyRate: string;
+  startDate: string;
+  endDate: string;
+}
 export interface IndexerResult {
   markets: Market[];
   events: MarketEvent[];

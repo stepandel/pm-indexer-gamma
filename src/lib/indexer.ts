@@ -1,6 +1,7 @@
 import { createPolymarketClient } from './polymarket-client';
 import { logger } from './logger';
 import { database } from './database';
+import { saveEventWithMarkets } from './database-operations';
 import type { IndexerResult } from '../types/market';
 
 interface IndexerState {
@@ -34,15 +35,35 @@ const fetchActiveEvents = async (client: ReturnType<typeof createPolymarketClien
   logger.debug('Fetching active events');
 
   try {
-    const eventInfo = await client.getActiveEvents();
+    let totalEvents = 0;
+    let totalMarkets = 0;
+    let firstEventId = '';
+    let lastEventId = '';
 
-    if (eventInfo.totalCount > 0) {
-      logger.info(`Found ${eventInfo.totalCount} active events`);
-      logger.info(`First event ID: ${eventInfo.firstEventId}`);
-      logger.info(`Last event ID: ${eventInfo.lastEventId}`);
+    // Process events in batches
+    for await (const eventBatch of client.getActiveEvents()) {
+      for (const event of eventBatch) {
+        if (totalEvents === 0) firstEventId = event.id;
+        lastEventId = event.id;
+        totalEvents++;
+
+        // Save event with its markets to database
+        const result = await saveEventWithMarkets(event);
+        if (result.markets) {
+          totalMarkets += result.markets.length;
+        }
+      }
+
+      logger.debug(`Processed batch: ${eventBatch.length} events`);
     }
 
-    return eventInfo;
+    if (totalEvents > 0) {
+      logger.info(`Found and saved ${totalEvents} active events with ${totalMarkets} markets`);
+      logger.info(`First event ID: ${firstEventId}`);
+      logger.info(`Last event ID: ${lastEventId}`);
+    }
+
+    return { totalCount: totalEvents, firstEventId, lastEventId };
   } catch (error) {
     logger.error('Failed to fetch active events', error);
     throw error;
