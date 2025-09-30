@@ -1,5 +1,6 @@
 import { createPolymarketClient } from './polymarket-client';
 import { logger } from './logger';
+import { database } from './database';
 import type { IndexerResult } from '../types/market';
 
 interface IndexerState {
@@ -87,11 +88,20 @@ const testConnection = async (client: ReturnType<typeof createPolymarketClient>)
 
     if (events && events.length > 0) {
       logger.info('Connection test successful');
-      return true;
+    } else {
+      logger.warn('Connection test returned no events');
+      return false;
     }
 
-    logger.warn('Connection test returned no events');
-    return false;
+    // Test database connection if available
+    if (database) {
+      const dbConnected = await database.testConnection();
+      if (!dbConnected) {
+        logger.warn('Database connection failed, continuing without database');
+      }
+    }
+
+    return true;
   } catch (error) {
     logger.error('Connection test failed', error);
     return false;

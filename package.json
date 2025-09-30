@@ -11,9 +11,11 @@
   },
   "devDependencies": {
     "@types/bun": "^1.2.23",
+    "@types/pg": "^8.15.5",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "dotenv": "^17.2.2"
+    "dotenv": "^17.2.2",
+    "pg": "^8.16.3"
   }
 }
