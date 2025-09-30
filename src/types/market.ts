@@ -5,6 +5,7 @@ export interface Market {
   slug: string;
   endDate?: string;
   startDate?: string;
+  gameStartTime?: string;
   image?: string;
   icon?: string;
   description?: string;

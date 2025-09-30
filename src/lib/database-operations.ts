@@ -141,7 +141,7 @@ const transformMarketToDb = (market: Market, eventId?: string): MarketsInsert =>
     description: market.description || null,
     start_time: market.startDate ? new Date(market.startDate) : null,
     end_time: market.endDate ? new Date(market.endDate) : null,
-    game_start_time: null,
+    game_start_time: market.gameStartTime ? new Date(market.gameStartTime) : null,
     polymarket_id: market.conditionId || null,
     market_event_id: eventId || null
   };
