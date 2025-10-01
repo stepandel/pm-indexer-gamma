@@ -2,6 +2,7 @@ import { createPolymarketClient } from './polymarket-client';
 import { logger } from './logger';
 import { database } from './database';
 import { saveEventWithMarkets } from './database-operations';
+import { processBatchEvents } from './database-operations-batch';
 import type { IndexerResult } from '../types/market';
 
 interface IndexerState {
@@ -31,7 +32,7 @@ const fetchActiveMarkets = async (client: ReturnType<typeof createPolymarketClie
   }
 };
 
-const fetchActiveEvents = async (client: ReturnType<typeof createPolymarketClient>, state: IndexerState) => {
+const fetchActiveEvents = async (client: ReturnType<typeof createPolymarketClient>, state: IndexerState, useBatchMode: boolean = true) => {
   logger.debug('Fetching active events');
 
   try {
@@ -43,22 +44,37 @@ const fetchActiveEvents = async (client: ReturnType<typeof createPolymarketClien
 
     // Process events in batches
     for await (const eventBatch of client.getActiveEvents()) {
-      for (const event of eventBatch) {
-        if (totalEvents === 0) firstEventId = event.id;
-        lastEventId = event.id;
-        totalEvents++;
+      if (eventBatch.length === 0) continue;
 
-        // Save event with its markets and tags to database
-        const result = await saveEventWithMarkets(event);
-        if (result.markets) {
-          totalMarkets += result.markets.length;
+      if (totalEvents === 0) firstEventId = eventBatch[0].id;
+      lastEventId = eventBatch[eventBatch.length - 1].id;
+
+      if (useBatchMode) {
+        // Use optimized batch processing
+        const startTime = Date.now();
+        const result = await processBatchEvents(eventBatch);
+        const duration = Date.now() - startTime;
+
+        totalEvents += result.events.length;
+        totalMarkets += result.markets.length;
+        totalTags += result.tags.length;
+
+        logger.debug(`Batch processed in ${duration}ms: ${eventBatch.length} events, ${result.markets.length} markets, ${result.tags.length} tags`);
+      } else {
+        // Fall back to individual processing if needed
+        for (const event of eventBatch) {
+          totalEvents++;
+
+          const result = await saveEventWithMarkets(event);
+          if (result.markets) {
+            totalMarkets += result.markets.length;
+          }
+          if (result.tags) {
+            totalTags += result.tags.length;
+          }
         }
-        if (result.tags) {
-          totalTags += result.tags.length;
-        }
+        logger.debug(`Processed batch: ${eventBatch.length} events`);
       }
-
-      logger.debug(`Processed batch: ${eventBatch.length} events`);
     }
 
     if (totalEvents > 0) {
