@@ -11,6 +11,7 @@ import type {
   MarketTagsInsert
 } from '../types/database';
 import type { MarketEvent, Market, Tags } from '../types/market';
+import { getMarketWinner } from './outcome-determination';
 
 const upsertMarketEvent = async (eventData: MarketEventsInsert): Promise<MarketEventsDB | null> => {
   if (!database) {
@@ -137,6 +138,9 @@ const transformMarketToDb = (market: Market, eventId?: string): MarketsInsert =>
   const outcomes = market.outcomes ? JSON.parse(market.outcomes) : [];
   const prices = market.outcomePrices ? JSON.parse(market.outcomePrices) : [];
 
+  // Determine winner based on market state and prices
+  const winner = getMarketWinner(market);
+
   return {
     id: market.id,
     question: market.question,
@@ -144,7 +148,7 @@ const transformMarketToDb = (market: Market, eventId?: string): MarketsInsert =>
     outcome2: outcomes[1] || 'No',
     price1: prices[0] || '0.5',
     price2: prices[1] || '0.5',
-    winner: 'UNRESOLVED',
+    winner,
     volume: market.volume || null,
     image: market.image || null,
     description: market.description || null,
