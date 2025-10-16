@@ -1,30 +1,59 @@
+// Polymarket API response types - 1:1 mapping with API
 export interface Market {
   id: string;
   question: string;
-  conditionId?: string;
+  conditionId: string;
   slug: string;
-  endDate?: string;
-  startDate?: string;
-  gameStartTime?: string;
-  image?: string;
-  icon?: string;
-  description?: string;
+  resolutionSource: string;
+  endDate: string;
+  liquidity: string;
+  startDate: string;
+  image: string;
+  icon: string;
+  description: string;
+  outcomes: string; // JSON array: ["Yes", "No"]
+  outcomePrices: string; // JSON array: ["0.891", "0.109"]
+  volume: string;
   active: boolean;
   closed: boolean;
-  archived: boolean;
-  outcomes: string;
-  outcomePrices: string;
-  volume: string;
-  volumeNum?: number;
-  liquidity: string;
-  liquidityNum?: number;
-  questionId?: string;
+  marketMakerAddress: string;
   createdAt: string;
   updatedAt: string;
-  clobRewards: Rewards[];
-  rewardsMinSize: number;
-  rewardsMaxSpread: number;
-  spread: number;
+  new: boolean;
+  featured: boolean;
+  submitted_by: string;
+  archived: boolean;
+  resolvedBy: string;
+  restricted: boolean;
+  groupItemTitle: string;
+  groupItemThreshold: string;
+  questionID: string;
+  enableOrderBook: boolean;
+  orderPriceMinTickSize: number;
+  orderMinSize: number;
+  volumeNum: number;
+  liquidityNum: number;
+  endDateIso: string;
+  startDateIso: string;
+  hasReviewedDates: boolean;
+  volume24hr: number;
+  volume1wk: number;
+  volume1mo: number;
+  volume1yr: number;
+  clobTokenIds: string; // JSON array
+  umaBond: string;
+  umaReward: string;
+  volume24hrClob: number;
+  volume1wkClob: number;
+  volume1moClob: number;
+  volume1yrClob: number;
+  volumeClob: number;
+  liquidityClob: number;
+  customLiveness: number;
+  acceptingOrders: boolean;
+  negRisk: boolean;
+  negRiskMarketID: string;
+  negRiskRequestID: string;
 }
 
 export interface MarketEvent {
@@ -51,15 +80,6 @@ export interface Tags {
   slug: string;
 }
 
-export interface Rewards {
-  id: string;
-  conditionId: string;
-  assertAddress: string;
-  rewardAmount: string;
-  rewardsDailyRate: string;
-  startDate: string;
-  endDate: string;
-}
 export interface IndexerResult {
   markets: Market[];
   events: MarketEvent[];

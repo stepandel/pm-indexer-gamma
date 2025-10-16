@@ -8,71 +8,108 @@ datasource db {
   schemas  = ["public"]
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model entity {
-  id            String          @id
-  type          String
-  name          String
-  aliases       Json            @default("[]")
-  meta          Json            @default("{}")
-  is_active     Boolean         @default(true)
-  created_at    DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime        @default(now()) @db.Timestamptz(6)
-  market_entity market_entity[]
+/// Markets table - 1:1 mapping with Polymarket API
+model markets {
+  // Core identifiers
+  id                    String   @id
+  question              String
+  condition_id          String?  @map("conditionId")
+  slug                  String
+  resolution_source     String?  @map("resolutionSource")
 
-  @@index([is_active], map: "idx_entity_is_active")
-  @@index([type], map: "idx_entity_type")
+  // Dates
+  end_date              DateTime? @map("endDate") @db.Timestamptz(6)
+  start_date            DateTime? @map("startDate") @db.Timestamptz(6)
+
+  // Media
+  image                 String?
+  icon                  String?
+  description           String?
+
+  // API response fields (JSON strings as they come from API)
+  outcomes              String   // JSON array: ["Yes", "No"]
+  outcome_prices        String   @map("outcomePrices") // JSON array: ["0.891", "0.109"]
+
+  // Financial data (keeping as strings to match API exactly)
+  volume                String
+  liquidity             String
+  volume_num            Float?   @map("volumeNum")
+  liquidity_num         Float?   @map("liquidityNum")
+  volume_24hr           Float?   @map("volume24hr")
+  volume_1wk            Float?   @map("volume1wk")
+  volume_1mo            Float?   @map("volume1mo")
+  volume_1yr            Float?   @map("volume1yr")
+  volume_clob           Float?   @map("volumeClob")
+  liquidity_clob        Float?   @map("liquidityClob")
+  volume_24hr_clob      Float?   @map("volume24hrClob")
+  volume_1wk_clob       Float?   @map("volume1wkClob")
+  volume_1mo_clob       Float?   @map("volume1moClob")
+  volume_1yr_clob       Float?   @map("volume1yrClob")
+
+  // Status flags
+  active                Boolean  @default(true)
+  closed                Boolean  @default(false)
+  archived              Boolean  @default(false)
+  new                   Boolean  @default(false)
+  featured              Boolean  @default(false)
+  restricted            Boolean  @default(false)
+  accepting_orders      Boolean? @map("acceptingOrders")
+  neg_risk              Boolean? @map("negRisk")
+
+  // Market maker and addresses
+  market_maker_address  String?  @map("marketMakerAddress")
+  submitted_by          String?  @map("submittedBy")
+  resolved_by           String?  @map("resolvedBy")
+
+  // Grouping
+  group_item_title      String?  @map("groupItemTitle")
+  group_item_threshold  String?  @map("groupItemThreshold")
+
+  // Trading parameters
+  question_id           String?  @map("questionID")
+  enable_order_book     Boolean? @map("enableOrderBook")
+  order_price_min_tick_size Float? @map("orderPriceMinTickSize")
+  order_min_size        Float?   @map("orderMinSize")
+
+  // Date helpers
+  end_date_iso          String?  @map("endDateIso")
+  start_date_iso        String?  @map("startDateIso")
+  has_reviewed_dates    Boolean? @map("hasReviewedDates")
+
+  // CLOB token IDs (JSON array)
+  clob_token_ids        String?  @map("clobTokenIds")
+
+  // UMA parameters
+  uma_bond              String?  @map("umaBond")
+  uma_reward            String?  @map("umaReward")
+  custom_liveness       Int?     @map("customLiveness")
+
+  // Neg risk fields
+  neg_risk_market_id    String?  @map("negRiskMarketID")
+  neg_risk_request_id   String?  @map("negRiskRequestID")
+
+  // Timestamps (from API)
+  created_at            DateTime @map("createdAt") @db.Timestamptz(6)
+  updated_at            DateTime @map("updatedAt") @db.Timestamptz(6)
+
+  // Internal tracking
+  indexed_at            DateTime @default(now()) @db.Timestamptz(6)
+  last_updated          DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations (if you still want to track events separately)
+  market_event_id       String?
+  market_events         market_events? @relation(fields: [market_event_id], references: [id], onUpdate: NoAction)
+  market_tags           market_tags[]
+
+  @@index([market_event_id], map: "idx_markets_market_event_id")
+  @@index([active], map: "idx_markets_active")
+  @@index([closed], map: "idx_markets_closed")
+  @@index([condition_id], map: "idx_markets_condition_id")
+  @@index([slug], map: "idx_markets_slug")
   @@schema("public")
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model event_date {
-  event_id       String    @id
-  event_time_utc DateTime? @db.Timestamptz(6)
-  confidence     Float     @default(0.0) @db.Real
-  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
-
-  @@index([confidence], map: "idx_event_date_confidence")
-  @@index([event_time_utc], map: "idx_event_date_event_time_utc")
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model market_entity {
-  market_id  String
-  entity_id  String
-  surface    String?
-  extractor  String
-  confidence Decimal  @db.Decimal
-  first_seen DateTime @default(now()) @db.Timestamptz(6)
-  last_seen  DateTime @default(now()) @db.Timestamptz(6)
-  entity     entity   @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  markets    markets  @relation(fields: [market_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([market_id, entity_id])
-  @@index([confidence], map: "idx_market_entity_confidence")
-  @@index([entity_id], map: "idx_market_entity_entity_id")
-  @@index([extractor], map: "idx_market_entity_extractor")
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model market_event_tags {
-  market_event_id String
-  tag_id          String
-  created_at      DateTime      @default(now()) @db.Timestamptz(6)
-  market_events   market_events @relation(fields: [market_event_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tags            tags          @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([market_event_id, tag_id])
-  @@index([market_event_id], map: "idx_market_event_tags_market_event_id")
-  @@index([tag_id], map: "idx_market_event_tags_tag_id")
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// Market events table - keeping for grouping if needed
 model market_events {
   id                String              @id
   slug              String              @unique
@@ -83,8 +120,8 @@ model market_events {
   active            Boolean             @default(true)
   closed            Boolean             @default(false)
   restricted        Boolean             @default(false)
-  volume            Decimal?            @default(0) @db.Decimal(78, 18)
-  liquidity         Decimal?            @default(0) @db.Decimal(78, 18)
+  volume            String?             @default("0")
+  liquidity         String?             @default("0")
   created_at        DateTime            @default(now()) @db.Timestamptz(6)
   updated_at        DateTime            @default(now()) @db.Timestamptz(6)
   market_event_tags market_event_tags[]
@@ -93,7 +130,20 @@ model market_events {
   @@schema("public")
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+/// Tags for categorization
+model tags {
+  id                String              @id
+  label             String
+  slug              String              @unique
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  market_event_tags market_event_tags[]
+  market_tags       market_tags[]
+
+  @@schema("public")
+}
+
+/// Market to tag relationships
 model market_tags {
   market_id  String
   tag_id     String
@@ -107,92 +157,16 @@ model market_tags {
   @@schema("public")
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model markets {
-  id              String          @id
-  question        String
-  outcome1        String
-  outcome2        String
-  price1          Decimal         @db.Decimal(78, 18)
-  price2          Decimal         @db.Decimal(78, 18)
-  winner          winner_enum     @default(UNRESOLVED)
-  volume          Decimal?        @db.Decimal(78, 18)
-  image           String?
-  description     String?
-  start_time      DateTime?       @db.Timestamptz(6)
-  end_time        DateTime?       @db.Timestamptz(6)
-  game_start_time DateTime?       @db.Timestamptz(6)
-  polymarket_id   String?
-  created_at      DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
-  market_event_id String?
-  market_entity   market_entity[]
-  market_tags     market_tags[]
-  market_events   market_events?  @relation(fields: [market_event_id], references: [id], onUpdate: NoAction)
-  parlay_legs     parlay_legs[]
+/// Event to tag relationships
+model market_event_tags {
+  market_event_id String
+  tag_id          String
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  market_events   market_events @relation(fields: [market_event_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags            tags          @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([market_event_id], map: "idx_markets_market_event_id")
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model parlay_bets {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  bettor_id   String        @db.Uuid
-  stake       Decimal       @db.Decimal(78, 18)
-  max_payout  Decimal       @db.Decimal(78, 18)
-  expiry      DateTime      @db.Timestamptz(6)
-  created_at  DateTime      @default(now()) @db.Timestamptz(6)
-  parlay_legs parlay_legs[]
-
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model parlay_legs {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  parlay_id   String      @db.Uuid
-  market_id   String
-  selection   String
-  entry_price Decimal     @db.Decimal(78, 18)
-  created_at  DateTime    @default(now()) @db.Timestamptz(6)
-  markets     markets     @relation(fields: [market_id], references: [id], onUpdate: NoAction)
-  parlay_bets parlay_bets @relation(fields: [parlay_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([parlay_id, market_id])
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model tags {
-  id                String              @id
-  label             String
-  slug              String              @unique
-  created_at        DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
-  market_event_tags market_event_tags[]
-  market_tags       market_tags[]
-
-  @@schema("public")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model user_balance {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id    String   @unique @db.Uuid
-  balance    Decimal  @default(0) @db.Decimal(78, 18)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
-
-  @@schema("public")
-}
-
-enum winner_enum {
-  OUTCOME1
-  OUTCOME2
-  VOID
-  UNRESOLVED
-  DRAW
-
+  @@id([market_event_id, tag_id])
+  @@index([market_event_id], map: "idx_market_event_tags_market_event_id")
+  @@index([tag_id], map: "idx_market_event_tags_tag_id")
   @@schema("public")
 }
