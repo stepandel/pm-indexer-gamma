@@ -1,5 +1,4 @@
-import { Pool } from 'pg';
-import type { PoolConfig } from 'pg';
+import { PrismaClient } from '@prisma/client';
 import { config } from '../config/config';
 import { logger } from './logger';
 
@@ -9,27 +8,66 @@ const createDatabaseClient = () => {
     return null;
   }
 
-  const poolConfig: PoolConfig = {
-    connectionString: config.database.url,
-    max: 10, // maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // close idle clients after 30 seconds
-    connectionTimeoutMillis: 2000, // return an error after 2 seconds if connection could not be established
-  };
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: config.database.url,
+      },
+    },
+    log: [
+      {
+        emit: 'event',
+        level: 'query',
+      },
+      {
+        emit: 'event',
+        level: 'error',
+      },
+      {
+        emit: 'event',
+        level: 'info',
+      },
+      {
+        emit: 'event',
+        level: 'warn',
+      },
+    ],
+  });
 
-  const pool = new Pool(poolConfig);
+  // Handle Prisma logging
+  prisma.$on('query', (e) => {
+    logger.debug('Executed query', {
+      query: e.query,
+      params: e.params,
+      duration: e.duration,
+      target: e.target
+    });
+  });
 
-  // Handle connection errors
-  pool.on('error', (err) => {
-    logger.error('Unexpected error on idle client', err);
+  prisma.$on('error', (e) => {
+    logger.error('Prisma error', e);
+  });
+
+  prisma.$on('info', (e) => {
+    logger.info('Prisma info', e);
+  });
+
+  prisma.$on('warn', (e) => {
+    logger.warn('Prisma warning', e);
   });
 
   const query = async (text: string, params?: any[]) => {
     const start = Date.now();
     try {
-      const res = await pool.query(text, params);
+      const res = await prisma.$queryRawUnsafe(text, ...(params || []));
       const duration = Date.now() - start;
-      logger.debug('Executed query', { text, duration, rows: res.rowCount });
-      return res;
+      logger.debug('Executed raw query', { text, duration, resultCount: Array.isArray(res) ? res.length : 1 });
+
+      // Convert to pg-like result format for compatibility
+      return {
+        rows: Array.isArray(res) ? res : [res],
+        rowCount: Array.isArray(res) ? res.length : (res ? 1 : 0)
+      };
     } catch (error) {
       const duration = Date.now() - start;
       logger.error('Query failed', { text, duration, error });
@@ -109,10 +147,10 @@ const createDatabaseClient = () => {
 
   const close = async () => {
     try {
-      await pool.end();
-      logger.info('Database connection pool closed');
+      await prisma.$disconnect();
+      logger.info('Database connection closed');
     } catch (error) {
-      logger.error('Error closing database connection pool', error);
+      logger.error('Error closing database connection', error);
     }
   };
 
@@ -121,7 +159,7 @@ const createDatabaseClient = () => {
     testConnection,
     getSchema,
     close,
-    pool
+    prisma
   };
 };
 

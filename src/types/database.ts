@@ -1,167 +1,86 @@
-// Auto-generated database types
-// Generated at: 2025-09-30T22:49:00.733Z
-// Do not edit manually - run 'bun run scripts/generate-types.ts' to regenerate
+// Database types - now using Prisma-generated types with compatibility layer
+// This file re-exports Prisma types and provides legacy compatibility
 
-// Custom enums (define manually as needed)
-export type WinnerEnum = 'UNRESOLVED' | 'OUTCOME1' | 'OUTCOME2' | 'DRAW';
+import type {
+  market_events,
+  markets,
+  tags,
+  market_event_tags,
+  market_tags,
+  user_balance,
+  winner_enum,
+  Prisma
+} from '@prisma/client';
 
-
-// market_event_tags table
-export interface MarketEventTagsDB {
-  market_event_id: string;
-  tag_id: string;
-  created_at: Date;
-}
-
-// market_events table
-export interface MarketEventsDB {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  image: string | null;
-  icon: string | null;
-  active: boolean;
-  closed: boolean;
-  restricted: boolean;
-  volume: string | null;
-  liquidity: string | null;
-  created_at: Date;
-  updated_at: Date;
-}
-
-// market_tags table
-export interface MarketTagsDB {
-  market_id: string;
-  tag_id: string;
-  created_at: Date;
-}
-
-// markets table
-export interface MarketsDB {
-  id: string;
-  question: string;
-  outcome1: string;
-  outcome2: string;
-  price1: string;
-  price2: string;
-  winner: WinnerEnum;
-  volume: string | null;
-  image: string | null;
-  description: string | null;
-  start_time: Date | null;
-  end_time: Date | null;
-  game_start_time: Date | null;
-  polymarket_id: string | null;
-  created_at: Date;
-  updated_at: Date;
-  market_event_id: string | null;
-}
-
-// parlay_bets table
-export interface ParlayBetsDB {
-  id: string;
-  bettor_id: string;
-  stake: string;
-  max_payout: string;
-  expiry: Date;
-  created_at: Date;
-}
-
-// parlay_legs table
-export interface ParlayLegsDB {
-  id: string;
-  parlay_id: string;
-  market_id: string;
-  selection: string;
-  entry_price: string;
-  created_at: Date;
-}
-
-// tags table
-export interface TagsDB {
-  id: string;
-  label: string;
-  slug: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-// user_balance table
-export interface UserBalanceDB {
-  id: string;
-  user_id: string;
-  balance: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-// Insert types (omit auto-generated fields)
-export type MarketEventTagsInsert = Omit<MarketEventTagsDB, 'created_at'> & {
-  created_at?: Date;
+// Helper type to convert Decimal fields to string for compatibility
+type DecimalToString<T> = {
+  [P in keyof T]: T[P] extends Prisma.Decimal | null
+    ? string | null
+    : T[P] extends Prisma.Decimal
+    ? string
+    : T[P];
 };
 
-export type MarketEventsInsert = Omit<MarketEventsDB, 'created_at' | 'updated_at'> & {
+// Re-export Prisma types with DB suffix for compatibility
+// Convert Decimal fields to strings for compatibility with existing code
+export type MarketEventsDB = DecimalToString<market_events>;
+export type MarketsDB = DecimalToString<markets>;
+export type TagsDB = tags;
+export type MarketEventTagsDB = market_event_tags;
+export type MarketTagsDB = market_tags;
+export type UserBalanceDB = DecimalToString<user_balance>;
+
+// Re-export enum
+export type WinnerEnum = winner_enum;
+
+// Create insert types (omit auto-generated fields)
+export type MarketEventsInsert = DecimalToString<Omit<market_events, 'created_at' | 'updated_at'>> & {
   created_at?: Date;
   updated_at?: Date;
 };
 
-export type MarketTagsInsert = Omit<MarketTagsDB, 'created_at'> & {
-  created_at?: Date;
-};
-
-export type MarketsInsert = Omit<MarketsDB, 'created_at' | 'updated_at'> & {
+export type MarketsInsert = DecimalToString<Omit<markets, 'created_at' | 'updated_at'>> & {
   created_at?: Date;
   updated_at?: Date;
 };
 
-export type ParlayBetsInsert = Omit<ParlayBetsDB, 'id' | 'created_at'> & {
-  id?: string;
-  created_at?: Date;
-};
-
-export type ParlayLegsInsert = Omit<ParlayLegsDB, 'id' | 'created_at'> & {
-  id?: string;
-  created_at?: Date;
-};
-
-export type TagsInsert = Omit<TagsDB, 'created_at' | 'updated_at'> & {
+export type TagsInsert = Omit<tags, 'created_at' | 'updated_at'> & {
   created_at?: Date;
   updated_at?: Date;
 };
 
-export type UserBalanceInsert = Omit<UserBalanceDB, 'id' | 'created_at' | 'updated_at'> & {
+export type MarketEventTagsInsert = Omit<market_event_tags, 'created_at'> & {
+  created_at?: Date;
+};
+
+export type MarketTagsInsert = Omit<market_tags, 'created_at'> & {
+  created_at?: Date;
+};
+
+export type UserBalanceInsert = DecimalToString<Omit<user_balance, 'id' | 'created_at' | 'updated_at'>> & {
   id?: string;
   created_at?: Date;
   updated_at?: Date;
 };
 
 // Update types (partial updates)
-export type MarketEventTagsUpdate = Partial<Omit<MarketEventTagsDB, 'id' | 'created_at'>> & {
-};
-
-export type MarketEventsUpdate = Partial<Omit<MarketEventsDB, 'id' | 'created_at'>> & {
+export type MarketEventsUpdate = Partial<DecimalToString<Omit<market_events, 'id' | 'created_at'>>> & {
   updated_at?: Date;
 };
 
-export type MarketTagsUpdate = Partial<Omit<MarketTagsDB, 'id' | 'created_at'>> & {
-};
-
-export type MarketsUpdate = Partial<Omit<MarketsDB, 'id' | 'created_at'>> & {
+export type MarketsUpdate = Partial<DecimalToString<Omit<markets, 'id' | 'created_at'>>> & {
   updated_at?: Date;
 };
 
-export type ParlayBetsUpdate = Partial<Omit<ParlayBetsDB, 'id' | 'created_at'>> & {
-};
-
-export type ParlayLegsUpdate = Partial<Omit<ParlayLegsDB, 'id' | 'created_at'>> & {
-};
-
-export type TagsUpdate = Partial<Omit<TagsDB, 'id' | 'created_at'>> & {
+export type TagsUpdate = Partial<Omit<tags, 'id' | 'created_at'>> & {
   updated_at?: Date;
 };
 
-export type UserBalanceUpdate = Partial<Omit<UserBalanceDB, 'id' | 'created_at'>> & {
+export type MarketEventTagsUpdate = Partial<Omit<market_event_tags, 'market_event_id' | 'tag_id' | 'created_at'>>;
+
+export type MarketTagsUpdate = Partial<Omit<market_tags, 'market_id' | 'tag_id' | 'created_at'>>;
+
+export type UserBalanceUpdate = Partial<DecimalToString<Omit<user_balance, 'id' | 'created_at'>>> & {
   updated_at?: Date;
 };
 
@@ -187,3 +106,6 @@ export interface PaginatedResult<T> {
   offset: number;
   hasMore: boolean;
 }
+
+// Re-export Prisma types for advanced usage
+export type { Prisma };
