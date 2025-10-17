@@ -14,7 +14,7 @@ export const config = {
       enabled: process.env.POLYMARKET_ENABLED !== 'false', // enabled by default
     },
     kalshi: {
-      apiUrl: process.env.KALSHI_API_URL || 'https://api.kalshi.com',
+      apiUrl: process.env.KALSHI_API_URL || 'https://api.elections.kalshi.com',
       schema: 'kalshi',
       enabled: process.env.KALSHI_ENABLED === 'true', // disabled by default
     },
