@@ -10,12 +10,6 @@ const main = async () => {
   // Register all platforms
   await registerPlatforms();
 
-  // Check if platform is enabled
-  if (!selectedPlatformConfig.enabled) {
-    logger.error(`Platform ${selectedPlatform} is not enabled`);
-    process.exit(1);
-  }
-
   // Get the platform instance
   const platform = await platformRegistry.get(selectedPlatform);
   if (!platform) {

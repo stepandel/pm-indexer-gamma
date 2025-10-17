@@ -12,7 +12,6 @@ export class KalshiPlatform extends BasePlatform {
     const platformConfig: PlatformConfig = {
       apiUrl: config.platforms.kalshi.apiUrl,
       schema: config.platforms.kalshi.schema,
-      enabled: config.platforms.kalshi.enabled
     };
 
     const client = new KalshiClient();

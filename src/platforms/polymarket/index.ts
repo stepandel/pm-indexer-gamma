@@ -13,7 +13,6 @@ export class PolymarketPlatform extends BasePlatform {
     const platformConfig: PlatformConfig = {
       apiUrl: config.platforms.polymarket.apiUrl,
       schema: config.platforms.polymarket.schema,
-      enabled: config.platforms.polymarket.enabled
     };
 
     const client = new PolymarketClient();
