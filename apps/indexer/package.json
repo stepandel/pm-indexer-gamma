@@ -8,14 +8,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "pnpm exec tsx --watch src/index.ts",
-    "start": "pnpm exec tsx src/index.ts",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:migrate:reset": "prisma migrate reset",
-    "db:push": "prisma db push",
-    "db:pull": "prisma db pull",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "start": "pnpm exec tsx src/index.ts"
   },
   "dependencies": {
     "@prediction-markets/shared": "workspace:*",

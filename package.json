@@ -14,13 +14,13 @@
     "db:stop": "docker-compose down",
     "db:logs": "docker-compose logs -f postgres",
     "db:reset": "docker-compose down -v && pnpm db:setup",
-    "db:migrate": "turbo run db:migrate",
-    "db:migrate:deploy": "turbo run db:migrate:deploy",
-    "db:migrate:reset": "turbo run db:migrate:reset",
-    "db:push": "turbo run db:push",
-    "db:pull": "turbo run db:pull",
-    "db:generate": "turbo run db:generate",
-    "db:studio": "turbo run db:studio"
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:reset": "prisma migrate reset",
+    "db:push": "prisma db push",
+    "db:pull": "prisma db pull",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
