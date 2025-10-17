@@ -1,19 +1,25 @@
-# Multi-Platform Prediction Market Indexer
+# Prediction Markets Monorepo
 
-A TypeScript-based indexer that supports multiple prediction market platforms (Polymarket and Kalshi) and runs as a cron job on Railway, fetching and processing market data every 5 minutes.
+A TypeScript monorepo for prediction market data processing and analysis. Built with modern tools (pnpm + Turborepo) for scalable multi-platform indexing and future expansion.
 
 ## Features
 
-- **Multi-platform support**: Index data from Polymarket and Kalshi
-- **Platform isolation**: Each platform uses its own database schema
-- **Configurable deployments**: Deploy separate instances for each platform
-- **Built with Bun** for fast runtime performance
-- **Railway-ready** with cron scheduling and environment-based deployment
+- **🏗️ Monorepo Architecture**: Turborepo + pnpm for optimal developer experience
+- **🚀 Multi-platform Indexing**: Index data from Polymarket and Kalshi
+- **📦 Shared Libraries**: Reusable platform abstractions and utilities
+- **🔄 Database Isolation**: Each platform uses its own database schema
+- **⚡ Fast Builds**: Turborepo caching and parallel execution
+- **🚆 Railway-ready**: Independent deployments per app/platform
+
+## Prerequisites
+
+- **Node.js** 18+
+- **pnpm** 8+ (install with `npm install -g pnpm`)
 
 ## Installation
 
 ```bash
-bun install
+pnpm install
 ```
 
 ## Configuration
@@ -40,42 +46,60 @@ cp .env.example .env
 
 ## Development
 
-### Run Locally
-
-Run Polymarket indexer:
-```bash
-PLATFORM=polymarket bun run src/index.ts
-```
-
-Run Kalshi indexer:
-```bash
-PLATFORM=kalshi bun run src/index.ts
-```
-
 ### Database Setup
 
 Start the development database:
 ```bash
-bun run db:setup
+pnpm db:setup
 ```
 
 Run migrations:
 ```bash
-bun run db:migrate:deploy
+pnpm db:migrate:deploy
+```
+
+### Building & Running
+
+Build all packages:
+```bash
+pnpm build
+```
+
+Run type checking:
+```bash
+pnpm typecheck
+```
+
+### Run Apps Locally
+
+Run Polymarket indexer:
+```bash
+PLATFORM=polymarket pnpm --filter @prediction-markets/indexer start
+```
+
+Run Kalshi indexer:
+```bash
+PLATFORM=kalshi pnpm --filter @prediction-markets/indexer start
+```
+
+Development mode (with file watching):
+```bash
+pnpm --filter @prediction-markets/indexer dev
 ```
 
 ## Railway Deployment
 
-This project supports deploying separate Railway services for each platform, sharing the same database but running independently.
+The monorepo supports deploying each app independently to Railway. Each app has its own `railway.json` configuration.
 
-### Option 1: Separate Railway Services (Recommended)
+### Indexer App Deployment
 
-Deploy **two separate Railway services** from the same repository:
+Deploy **separate Railway services** for each platform from the same repository:
 
-#### Polymarket Service
+#### Polymarket Indexer Service
 1. Create a new Railway service
 2. Connect to your GitHub repository
-3. Set environment variables:
+3. Set Railway configuration to use `apps/indexer/railway.json`
+4. Set environment variables:
    ```
    PLATFORM=polymarket
    DATABASE_URL=<your-database-url>
@@ -83,16 +107,23 @@ Deploy **two separate Railway services** from the same repository:
    LOG_LEVEL=info (optional)
    ```
 
-#### Kalshi Service
+#### Kalshi Indexer Service
 1. Create another Railway service
 2. Connect to the same GitHub repository
-3. Set environment variables:
+3. Set Railway configuration to use `apps/indexer/railway.json`
+4. Set environment variables:
    ```
    PLATFORM=kalshi
    DATABASE_URL=<same-database-url>
    KALSHI_API_URL=https://api.elections.kalshi.com (optional)
    LOG_LEVEL=info (optional)
    ```
+
+### Railway Command
+The indexer uses this start command in Railway:
+```
+pnpm --filter @prediction-markets/indexer start
+```
 
 ### Option 2: Single Service with Manual Platform Switch
 
@@ -111,40 +142,49 @@ Both platforms use the same PostgreSQL database with separate schemas:
 - **Independent schedules**: Run different cron schedules for each platform
 - **Resource optimization**: Allocate different resources per platform
 
-## Project Structure
+## Monorepo Structure
 
 ```
-├── prisma/
+prediction-markets-monorepo/
+├── apps/                          # Deployable applications
+│   └── indexer/                   # Multi-platform indexer app
+│       ├── src/
+│       │   └── index.ts           # Entry point with platform selection
+│       ├── package.json           # App-specific dependencies
+│       ├── railway.json           # Railway deployment config
+│       └── tsconfig.json          # App-specific TypeScript config
+│
+├── packages/                      # Shared libraries
+│   ├── shared/                    # Core shared utilities and platform code
+│   │   ├── src/
+│   │   │   ├── lib/               # Shared utilities
+│   │   │   │   ├── database.ts    # Database connection
+│   │   │   │   ├── http-client.ts # HTTP utilities
+│   │   │   │   └── logger.ts      # Logging
+│   │   │   ├── platforms/         # Platform abstractions
+│   │   │   │   ├── base/          # Base interfaces and classes
+│   │   │   │   ├── polymarket/    # Polymarket implementation
+│   │   │   │   ├── kalshi/        # Kalshi implementation
+│   │   │   │   └── platform-registry.ts
+│   │   │   ├── config/            # Configuration management
+│   │   │   └── index.ts           # Barrel exports
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   └── tsconfig/                  # Shared TypeScript configurations
+│       ├── base.json              # Base TypeScript config
+│       ├── node.json              # Node.js specific config
+│       └── package.json
+│
+├── prisma/                        # Database (shared across all apps)
 │   ├── migrations/                # Database migrations
-│   └── schema.prisma             # Multi-platform database schema
-├── src/
-│   ├── index.ts                  # Main entry point with platform selection
-│   ├── config/
-│   │   └── config.ts             # Multi-platform configuration
-│   ├── lib/
-│   │   ├── database.ts           # Database connection and utilities
-│   │   ├── http-client.ts        # Generalized HTTP client
-│   │   └── logger.ts             # Logging utility
-│   └── platforms/                # Multi-platform architecture
-│       ├── platform-registry.ts  # Platform registry and management
-│       ├── base/
-│       │   ├── base-indexer.ts   # Base indexer class
-│       │   └── platform-interface.ts # Platform interface contracts
-│       ├── kalshi/
-│       │   ├── index.ts          # Kalshi platform implementation
-│       │   ├── client.ts         # Kalshi API client with cursor pagination
-│       │   ├── indexer.ts        # Kalshi indexer logic
-│       │   ├── operations.ts     # Kalshi database operations
-│       │   └── types.ts          # Kalshi type definitions
-│       └── polymarket/
-│           ├── index.ts          # Polymarket platform implementation
-│           ├── client.ts         # Polymarket API client
-│           ├── indexer.ts        # Polymarket indexer logic
-│           ├── operations.ts     # Polymarket database operations
-│           └── types.ts          # Polymarket type definitions
-├── package.json                  # Dependencies and scripts
-├── railway.json                  # Railway deployment configuration
-└── tsconfig.json                 # TypeScript configuration
+│   └── schema.prisma             # Multi-platform schema
+│
+├── package.json                   # Root package.json (workspace config)
+├── pnpm-workspace.yaml           # pnpm workspace configuration
+├── turbo.json                     # Turborepo configuration
+├── docker-compose.yml            # Local development database
+└── tsconfig.json                  # Root TypeScript config
 ```
 
 ## Database Schemas

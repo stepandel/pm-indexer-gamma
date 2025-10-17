@@ -1,0 +1,23 @@
+{
+  "name": "@prediction-markets/indexer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-platform prediction market indexer",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "pnpm exec tsx --watch src/index.ts",
+    "start": "pnpm exec tsx src/index.ts"
+  },
+  "dependencies": {
+    "@prediction-markets/shared": "workspace:*",
+    "prisma": "^6.17.1"
+  },
+  "devDependencies": {
+    "@prediction-markets/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.2"
+  }
+}

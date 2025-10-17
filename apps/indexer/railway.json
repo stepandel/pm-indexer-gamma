@@ -6,6 +6,6 @@
   "deploy": {
     "cronSchedule": "*/5 * * * *",
     "restartPolicyType": "NEVER",
-    "startCommand": "bun run src/index.ts"
+    "startCommand": "pnpm --filter @prediction-markets/indexer start"
   }
 }

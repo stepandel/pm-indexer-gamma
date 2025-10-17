@@ -1,8 +1,8 @@
-import type { PlatformClient } from '../base/platform-interface';
-import { request, batchGenerator } from '../../lib/http-client';
-import { config } from '../../config/config';
-import { logger } from '../../lib/logger';
-import type { Market, MarketEvent } from './types';
+import type { PlatformClient } from '../base/platform-interface.js';
+import { request, batchGenerator } from '../../lib/http-client.js';
+import { config } from '../../config/config.js';
+import { logger } from '../../lib/logger.js';
+import type { Market, MarketEvent } from './types.js';
 
 export class PolymarketClient implements PlatformClient {
   private baseUrl: string;
@@ -64,10 +64,10 @@ export class PolymarketClient implements PlatformClient {
     for await (const batch of batchGenerator(fetchFn)) {
       if (batch.length > 0) {
         if (firstMarketId === null) {
-          firstMarketId = batch[0].id;
+          firstMarketId = batch[0]?.id || '';
           logger.info(`First Polymarket market ID: ${firstMarketId}`);
         }
-        lastMarketId = batch[batch.length - 1].id;
+        lastMarketId = batch[batch.length - 1]?.id || '';
         totalCount += batch.length;
       }
     }

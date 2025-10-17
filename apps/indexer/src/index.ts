@@ -1,8 +1,6 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
-import { platformRegistry, registerPlatforms } from './platforms/platform-registry';
-import { selectedPlatform, selectedPlatformConfig } from './config/config';
-import { logger } from './lib/logger';
+import { platformRegistry, registerPlatforms, selectedPlatform, selectedPlatformConfig, logger } from '@prediction-markets/shared';
 
 const main = async () => {
   logger.info(`Multi-platform Indexer starting for platform: ${selectedPlatform}`);

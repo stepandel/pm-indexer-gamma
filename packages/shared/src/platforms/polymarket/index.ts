@@ -1,10 +1,10 @@
-import { BasePlatform } from '../base/platform-interface';
-import type { PlatformConfig, PlatformIndexer } from '../base/platform-interface';
-import { PolymarketClient } from './client';
-import { PolymarketDatabaseOperations } from './operations';
-import { PolymarketIndexer } from './indexer';
-import { config } from '../../config/config';
-import { database } from '../../lib/database';
+import { BasePlatform } from '../base/platform-interface.js';
+import type { PlatformConfig, PlatformIndexer } from '../base/platform-interface.js';
+import { PolymarketClient } from './client.js';
+import { PolymarketDatabaseOperations } from './operations.js';
+import { PolymarketIndexer } from './indexer.js';
+import { config } from '../../config/config.js';
+import { database } from '../../lib/database.js';
 
 export class PolymarketPlatform extends BasePlatform {
   private indexer: PlatformIndexer;

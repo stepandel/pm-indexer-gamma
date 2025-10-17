@@ -52,7 +52,7 @@ export class KalshiClient implements PlatformClient {
     let cursor: string | undefined;
 
     do {
-      const response = await this.fetchEvents({ cursor });
+      const response = await this.fetchEvents(cursor ? { cursor } : {});
 
       if (response.events && response.events.length > 0) {
         for (const event of response.events) {
@@ -89,7 +89,7 @@ export class KalshiClient implements PlatformClient {
 
     do {
       try {
-        const response = await this.fetchEvents({ cursor });
+        const response = await this.fetchEvents(cursor ? { cursor } : {});
 
         if (response.events && response.events.length > 0) {
           logger.debug(`Fetched Kalshi batch: ${response.events.length} events`);
