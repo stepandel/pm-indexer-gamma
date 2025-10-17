@@ -5,11 +5,11 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["public"]
+  schemas  = ["public", "polymarket", "kalshi"]
 }
 
-/// Markets table - 1:1 mapping with Polymarket API
-model markets {
+/// Polymarket Markets table - 1:1 mapping with Polymarket API
+model polymarket_markets {
   // Core identifiers
   id                    String   @id
   question              String
@@ -98,19 +98,20 @@ model markets {
 
   // Relations (if you still want to track events separately)
   market_event_id       String?
-  market_events         market_events? @relation(fields: [market_event_id], references: [id], onUpdate: NoAction)
-  market_tags           market_tags[]
+  market_events         polymarket_market_events? @relation(fields: [market_event_id], references: [id], onUpdate: NoAction)
+  market_tags           polymarket_market_tags[]
 
-  @@index([market_event_id], map: "idx_markets_market_event_id")
-  @@index([active], map: "idx_markets_active")
-  @@index([closed], map: "idx_markets_closed")
-  @@index([condition_id], map: "idx_markets_condition_id")
-  @@index([slug], map: "idx_markets_slug")
-  @@schema("public")
+  @@index([market_event_id], map: "idx_polymarket_markets_market_event_id")
+  @@index([active], map: "idx_polymarket_markets_active")
+  @@index([closed], map: "idx_polymarket_markets_closed")
+  @@index([condition_id], map: "idx_polymarket_markets_condition_id")
+  @@index([slug], map: "idx_polymarket_markets_slug")
+  @@map("markets")
+  @@schema("polymarket")
 }
 
-/// Market events table - 1:1 mapping with Polymarket Events API
-model market_events {
+/// Polymarket Market events table - 1:1 mapping with Polymarket Events API
+model polymarket_market_events {
   // Core identifiers
   id                String   @id
   ticker            String?
@@ -165,53 +166,119 @@ model market_events {
   last_updated      DateTime @default(now()) @db.Timestamptz(6)
 
   // Relations
-  market_event_tags market_event_tags[]
-  markets           markets[]
+  market_event_tags polymarket_market_event_tags[]
+  markets           polymarket_markets[]
 
-  @@index([active], map: "idx_market_events_active")
-  @@index([closed], map: "idx_market_events_closed")
-  @@index([featured], map: "idx_market_events_featured")
-  @@index([ticker], map: "idx_market_events_ticker")
-  @@schema("public")
+  @@index([active], map: "idx_polymarket_market_events_active")
+  @@index([closed], map: "idx_polymarket_market_events_closed")
+  @@index([featured], map: "idx_polymarket_market_events_featured")
+  @@index([ticker], map: "idx_polymarket_market_events_ticker")
+  @@map("market_events")
+  @@schema("polymarket")
 }
 
-/// Tags for categorization
-model tags {
-  id                String              @id
+/// Polymarket Tags for categorization
+model polymarket_tags {
+  id                String                           @id
   label             String
-  slug              String              @unique
-  created_at        DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
-  market_event_tags market_event_tags[]
-  market_tags       market_tags[]
+  slug              String                           @unique
+  created_at        DateTime                         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime                         @default(now()) @db.Timestamptz(6)
+  market_event_tags polymarket_market_event_tags[]
+  market_tags       polymarket_market_tags[]
 
-  @@schema("public")
+  @@map("tags")
+  @@schema("polymarket")
 }
 
-/// Market to tag relationships
-model market_tags {
+/// Polymarket Market to tag relationships
+model polymarket_market_tags {
   market_id  String
   tag_id     String
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  markets    markets  @relation(fields: [market_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tags       tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at DateTime            @default(now()) @db.Timestamptz(6)
+  markets    polymarket_markets  @relation(fields: [market_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags       polymarket_tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([market_id, tag_id])
-  @@index([market_id], map: "idx_market_tags_market_id")
-  @@index([tag_id], map: "idx_market_tags_tag_id")
-  @@schema("public")
+  @@index([market_id], map: "idx_polymarket_market_tags_market_id")
+  @@index([tag_id], map: "idx_polymarket_market_tags_tag_id")
+  @@map("market_tags")
+  @@schema("polymarket")
 }
 
-/// Event to tag relationships
-model market_event_tags {
+/// Polymarket Event to tag relationships
+model polymarket_market_event_tags {
   market_event_id String
   tag_id          String
-  created_at      DateTime      @default(now()) @db.Timestamptz(6)
-  market_events   market_events @relation(fields: [market_event_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tags            tags          @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at      DateTime                     @default(now()) @db.Timestamptz(6)
+  market_events   polymarket_market_events     @relation(fields: [market_event_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags            polymarket_tags              @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([market_event_id, tag_id])
-  @@index([market_event_id], map: "idx_market_event_tags_market_event_id")
-  @@index([tag_id], map: "idx_market_event_tags_tag_id")
-  @@schema("public")
+  @@index([market_event_id], map: "idx_polymarket_market_event_tags_market_event_id")
+  @@index([tag_id], map: "idx_polymarket_market_event_tags_tag_id")
+  @@map("market_event_tags")
+  @@schema("polymarket")
+}
+
+// ====================
+// KALSHI SCHEMA
+// ====================
+
+/// Kalshi Markets table - to be expanded based on Kalshi API
+model kalshi_markets {
+  // Core identifiers
+  id          String   @id
+  title       String
+  ticker      String
+  slug        String
+
+  // Dates
+  close_date  DateTime? @map("closeDate") @db.Timestamptz(6)
+  open_date   DateTime? @map("openDate") @db.Timestamptz(6)
+
+  // Status
+  status      String?
+  active      Boolean  @default(true)
+  can_close_early Boolean? @map("canCloseEarly")
+
+  // Financial data
+  last_price  Float?   @map("lastPrice")
+  volume      Int?     @default(0)
+  open_interest Int?   @map("openInterest") @default(0)
+
+  // Timestamps
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  // Internal tracking
+  indexed_at   DateTime @default(now()) @db.Timestamptz(6)
+  last_updated DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([active], map: "idx_kalshi_markets_active")
+  @@index([status], map: "idx_kalshi_markets_status")
+  @@index([ticker], map: "idx_kalshi_markets_ticker")
+  @@index([slug], map: "idx_kalshi_markets_slug")
+  @@map("markets")
+  @@schema("kalshi")
+}
+
+/// Kalshi Events/Series table - to be expanded based on Kalshi API
+model kalshi_events {
+  // Core identifiers
+  id          String   @id
+  title       String
+  ticker      String
+
+  // Timestamps
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  // Internal tracking
+  indexed_at   DateTime @default(now()) @db.Timestamptz(6)
+  last_updated DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([ticker], map: "idx_kalshi_events_ticker")
+  @@map("events")
+  @@schema("kalshi")
 }
