@@ -1,18 +1,14 @@
 import { database } from './database';
 import { logger } from './logger';
 import type {
-  MarketEventsInsert,
-  MarketsInsert,
-  MarketEventsDB,
-  MarketsDB,
-  TagsInsert,
-  TagsDB,
-  MarketEventTagsInsert,
-  MarketTagsInsert
-} from '../types/database';
+  markets,
+  market_events,
+  tags,
+  Prisma
+} from '@prisma/client';
 import type { MarketEvent, Market, Tags } from '../types/market';
 
-const upsertMarketEvent = async (eventData: MarketEventsInsert): Promise<MarketEventsDB | null> => {
+const upsertMarketEvent = async (eventData: any): Promise<market_events | null> => {
   if (!database?.prisma) {
     logger.warn('Database not available, skipping event upsert');
     return null;
@@ -38,7 +34,7 @@ const upsertMarketEvent = async (eventData: MarketEventsInsert): Promise<MarketE
   }
 };
 
-const upsertMarket = async (marketData: MarketsInsert): Promise<MarketsDB | null> => {
+const upsertMarket = async (marketData: any): Promise<markets | null> => {
   if (!database?.prisma) {
     logger.warn('Database not available, skipping market upsert');
     return null;
@@ -65,7 +61,7 @@ const upsertMarket = async (marketData: MarketsInsert): Promise<MarketsDB | null
 };
 
 // Transform API Market to Database format (1:1 mapping, much simpler!)
-const transformMarketToDb = (market: Market, eventId?: string): MarketsInsert => {
+const transformMarketToDb = (market: Market, eventId?: string) => {
   return {
     id: market.id,
     question: market.question,
@@ -125,7 +121,7 @@ const transformMarketToDb = (market: Market, eventId?: string): MarketsInsert =>
   };
 };
 
-const transformEventToDb = (event: MarketEvent): MarketEventsInsert => {
+const transformEventToDb = (event: MarketEvent) => {
   return {
     id: event.id,
     ticker: event.ticker || null,
@@ -163,9 +159,9 @@ const transformEventToDb = (event: MarketEvent): MarketEventsInsert => {
   };
 };
 
-const saveEventWithMarkets = async (event: MarketEvent): Promise<{ event: MarketEventsDB | null; markets: MarketsDB[]; tags: TagsDB[] }> => {
-  const savedMarkets: MarketsDB[] = [];
-  const savedTags: TagsDB[] = [];
+const saveEventWithMarkets = async (event: MarketEvent): Promise<{ event: market_events | null; markets: markets[]; tags: tags[] }> => {
+  const savedMarkets: markets[] = [];
+  const savedTags: tags[] = [];
 
   try {
     // Save event first
@@ -210,7 +206,7 @@ const saveEventWithMarkets = async (event: MarketEvent): Promise<{ event: Market
   }
 };
 
-const upsertTag = async (tagData: TagsInsert): Promise<TagsDB | null> => {
+const upsertTag = async (tagData: any): Promise<tags | null> => {
   if (!database?.prisma) {
     logger.warn('Database not available, skipping tag upsert');
     return null;
@@ -288,7 +284,7 @@ const linkMarketToTag = async (marketId: string, tagId: string): Promise<void> =
   }
 };
 
-const transformTagToDb = (tag: Tags): TagsInsert => {
+const transformTagToDb = (tag: Tags) => {
   return {
     id: tag.id,
     label: tag.label,
