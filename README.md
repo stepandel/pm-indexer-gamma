@@ -49,16 +49,36 @@ The indexer will run every 5 minutes as configured in `railway.json`.
 ## Project Structure
 
 ```
-src/
-├── index.ts           # Main entry point
-├── config/
-│   └── config.ts      # Configuration management
-├── lib/
-│   ├── indexer.ts     # Core indexer logic
-│   ├── polymarket-client.ts  # API client
-│   └── logger.ts      # Logging utility
-└── types/
-    └── market.ts      # TypeScript type definitions
+├── prisma/
+│   └── schema.prisma              # Database schema
+├── src/
+│   ├── index.ts                   # Main entry point
+│   ├── config/
+│   │   └── config.ts              # Configuration management
+│   ├── lib/
+│   │   ├── database.ts            # Database connection and utilities
+│   │   ├── http-client.ts         # Generic HTTP client
+│   │   └── logger.ts              # Logging utility
+│   └── platforms/                 # Multi-platform support
+│       ├── platform-registry.ts   # Platform registry and management
+│       ├── base/
+│       │   ├── base-indexer.ts    # Base indexer class
+│       │   └── platform-interface.ts  # Platform interface definition
+│       ├── kalshi/
+│       │   ├── index.ts           # Kalshi platform entry
+│       │   ├── client.ts          # Kalshi API client
+│       │   ├── indexer.ts         # Kalshi indexer implementation
+│       │   ├── operations.ts      # Kalshi operations
+│       │   └── types.ts           # Kalshi type definitions
+│       └── polymarket/
+│           ├── index.ts           # Polymarket platform entry
+│           ├── client.ts          # Polymarket API client
+│           ├── indexer.ts         # Polymarket indexer implementation
+│           ├── operations.ts      # Polymarket operations
+│           └── types.ts           # Polymarket type definitions
+├── package.json                   # Dependencies and scripts
+├── railway.json                   # Railway deployment configuration
+└── tsconfig.json                  # TypeScript configuration
 ```
 
 ## License
