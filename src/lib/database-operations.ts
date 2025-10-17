@@ -13,101 +13,25 @@ import type {
 import type { MarketEvent, Market, Tags } from '../types/market';
 
 const upsertMarketEvent = async (eventData: MarketEventsInsert): Promise<MarketEventsDB | null> => {
-  if (!database) {
+  if (!database?.prisma) {
     logger.warn('Database not available, skipping event upsert');
     return null;
   }
 
   try {
-    const query = `
-      INSERT INTO market_events (
-        id, ticker, slug, title, description, resolution_source,
-        start_date, creation_date, end_date, image, icon,
-        active, closed, archived, new, featured, restricted,
-        liquidity, volume, open_interest, competitive,
-        volume_24hr, volume_1wk, volume_1mo, volume_1yr, liquidity_clob,
-        sort_by, enable_order_book, neg_risk, neg_risk_market_id,
-        comment_count, created_at, updated_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        ticker = EXCLUDED.ticker,
-        slug = EXCLUDED.slug,
-        title = EXCLUDED.title,
-        description = EXCLUDED.description,
-        resolution_source = EXCLUDED.resolution_source,
-        start_date = EXCLUDED.start_date,
-        creation_date = EXCLUDED.creation_date,
-        end_date = EXCLUDED.end_date,
-        image = EXCLUDED.image,
-        icon = EXCLUDED.icon,
-        active = EXCLUDED.active,
-        closed = EXCLUDED.closed,
-        archived = EXCLUDED.archived,
-        new = EXCLUDED.new,
-        featured = EXCLUDED.featured,
-        restricted = EXCLUDED.restricted,
-        liquidity = EXCLUDED.liquidity,
-        volume = EXCLUDED.volume,
-        open_interest = EXCLUDED.open_interest,
-        competitive = EXCLUDED.competitive,
-        volume_24hr = EXCLUDED.volume_24hr,
-        volume_1wk = EXCLUDED.volume_1wk,
-        volume_1mo = EXCLUDED.volume_1mo,
-        volume_1yr = EXCLUDED.volume_1yr,
-        liquidity_clob = EXCLUDED.liquidity_clob,
-        sort_by = EXCLUDED.sort_by,
-        enable_order_book = EXCLUDED.enable_order_book,
-        neg_risk = EXCLUDED.neg_risk,
-        neg_risk_market_id = EXCLUDED.neg_risk_market_id,
-        comment_count = EXCLUDED.comment_count,
-        updated_at = EXCLUDED.updated_at,
-        last_updated = NOW()
-      RETURNING *;
-    `;
+    const result = await database.prisma.market_events.upsert({
+      where: { id: eventData.id },
+      create: {
+        ...eventData,
+        last_updated: new Date()
+      },
+      update: {
+        ...eventData,
+        last_updated: new Date()
+      }
+    });
 
-    const values = [
-      eventData.id,
-      eventData.ticker,
-      eventData.slug,
-      eventData.title,
-      eventData.description,
-      eventData.resolution_source,
-      eventData.start_date,
-      eventData.creation_date,
-      eventData.end_date,
-      eventData.image,
-      eventData.icon,
-      eventData.active,
-      eventData.closed,
-      eventData.archived,
-      eventData.new,
-      eventData.featured,
-      eventData.restricted,
-      eventData.liquidity,
-      eventData.volume,
-      eventData.open_interest,
-      eventData.competitive,
-      eventData.volume_24hr,
-      eventData.volume_1wk,
-      eventData.volume_1mo,
-      eventData.volume_1yr,
-      eventData.liquidity_clob,
-      eventData.sort_by,
-      eventData.enable_order_book,
-      eventData.neg_risk,
-      eventData.neg_risk_market_id,
-      eventData.comment_count,
-      eventData.created_at,
-      eventData.updated_at
-    ];
-
-    const result = await database.query(query, values);
-    return result.rows[0];
+    return result;
   } catch (error) {
     logger.error('Failed to upsert market event', { eventId: eventData.id, error });
     throw error;
@@ -115,153 +39,25 @@ const upsertMarketEvent = async (eventData: MarketEventsInsert): Promise<MarketE
 };
 
 const upsertMarket = async (marketData: MarketsInsert): Promise<MarketsDB | null> => {
-  if (!database) {
+  if (!database?.prisma) {
     logger.warn('Database not available, skipping market upsert');
     return null;
   }
 
   try {
-    const query = `
-      INSERT INTO markets (
-        id, question, condition_id, slug, resolution_source,
-        end_date, start_date, image, icon, description,
-        outcomes, outcome_prices, volume, liquidity,
-        volume_num, liquidity_num, volume_24hr, volume_1wk, volume_1mo, volume_1yr,
-        volume_clob, liquidity_clob, volume_24hr_clob, volume_1wk_clob, volume_1mo_clob, volume_1yr_clob,
-        active, closed, archived, new, featured, restricted, accepting_orders, neg_risk,
-        market_maker_address, submitted_by, resolved_by,
-        group_item_title, group_item_threshold,
-        question_id, enable_order_book, order_price_min_tick_size, order_min_size,
-        end_date_iso, start_date_iso, has_reviewed_dates,
-        clob_token_ids, uma_bond, uma_reward, custom_liveness,
-        neg_risk_market_id, neg_risk_request_id,
-        created_at, updated_at, market_event_id
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34, $35, $36, $37, $38, $39, $40,
-        $41, $42, $43, $44, $45, $46, $47, $48, $49, $50,
-        $51, $52, $53
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        question = EXCLUDED.question,
-        condition_id = EXCLUDED.condition_id,
-        slug = EXCLUDED.slug,
-        resolution_source = EXCLUDED.resolution_source,
-        end_date = EXCLUDED.end_date,
-        start_date = EXCLUDED.start_date,
-        image = EXCLUDED.image,
-        icon = EXCLUDED.icon,
-        description = EXCLUDED.description,
-        outcomes = EXCLUDED.outcomes,
-        outcome_prices = EXCLUDED.outcome_prices,
-        volume = EXCLUDED.volume,
-        liquidity = EXCLUDED.liquidity,
-        volume_num = EXCLUDED.volume_num,
-        liquidity_num = EXCLUDED.liquidity_num,
-        volume_24hr = EXCLUDED.volume_24hr,
-        volume_1wk = EXCLUDED.volume_1wk,
-        volume_1mo = EXCLUDED.volume_1mo,
-        volume_1yr = EXCLUDED.volume_1yr,
-        volume_clob = EXCLUDED.volume_clob,
-        liquidity_clob = EXCLUDED.liquidity_clob,
-        volume_24hr_clob = EXCLUDED.volume_24hr_clob,
-        volume_1wk_clob = EXCLUDED.volume_1wk_clob,
-        volume_1mo_clob = EXCLUDED.volume_1mo_clob,
-        volume_1yr_clob = EXCLUDED.volume_1yr_clob,
-        active = EXCLUDED.active,
-        closed = EXCLUDED.closed,
-        archived = EXCLUDED.archived,
-        new = EXCLUDED.new,
-        featured = EXCLUDED.featured,
-        restricted = EXCLUDED.restricted,
-        accepting_orders = EXCLUDED.accepting_orders,
-        neg_risk = EXCLUDED.neg_risk,
-        market_maker_address = EXCLUDED.market_maker_address,
-        submitted_by = EXCLUDED.submitted_by,
-        resolved_by = EXCLUDED.resolved_by,
-        group_item_title = EXCLUDED.group_item_title,
-        group_item_threshold = EXCLUDED.group_item_threshold,
-        question_id = EXCLUDED.question_id,
-        enable_order_book = EXCLUDED.enable_order_book,
-        order_price_min_tick_size = EXCLUDED.order_price_min_tick_size,
-        order_min_size = EXCLUDED.order_min_size,
-        end_date_iso = EXCLUDED.end_date_iso,
-        start_date_iso = EXCLUDED.start_date_iso,
-        has_reviewed_dates = EXCLUDED.has_reviewed_dates,
-        clob_token_ids = EXCLUDED.clob_token_ids,
-        uma_bond = EXCLUDED.uma_bond,
-        uma_reward = EXCLUDED.uma_reward,
-        custom_liveness = EXCLUDED.custom_liveness,
-        neg_risk_market_id = EXCLUDED.neg_risk_market_id,
-        neg_risk_request_id = EXCLUDED.neg_risk_request_id,
-        updated_at = EXCLUDED.updated_at,
-        market_event_id = EXCLUDED.market_event_id,
-        last_updated = NOW()
-      RETURNING *;
-    `;
+    const result = await database.prisma.markets.upsert({
+      where: { id: marketData.id },
+      create: {
+        ...marketData,
+        last_updated: new Date()
+      },
+      update: {
+        ...marketData,
+        last_updated: new Date()
+      }
+    });
 
-    const values = [
-      marketData.id,
-      marketData.question,
-      marketData.condition_id,
-      marketData.slug,
-      marketData.resolution_source,
-      marketData.end_date,
-      marketData.start_date,
-      marketData.image,
-      marketData.icon,
-      marketData.description,
-      marketData.outcomes,
-      marketData.outcome_prices,
-      marketData.volume,
-      marketData.liquidity,
-      marketData.volume_num,
-      marketData.liquidity_num,
-      marketData.volume_24hr,
-      marketData.volume_1wk,
-      marketData.volume_1mo,
-      marketData.volume_1yr,
-      marketData.volume_clob,
-      marketData.liquidity_clob,
-      marketData.volume_24hr_clob,
-      marketData.volume_1wk_clob,
-      marketData.volume_1mo_clob,
-      marketData.volume_1yr_clob,
-      marketData.active,
-      marketData.closed,
-      marketData.archived,
-      marketData.new,
-      marketData.featured,
-      marketData.restricted,
-      marketData.accepting_orders,
-      marketData.neg_risk,
-      marketData.market_maker_address,
-      marketData.submitted_by,
-      marketData.resolved_by,
-      marketData.group_item_title,
-      marketData.group_item_threshold,
-      marketData.question_id,
-      marketData.enable_order_book,
-      marketData.order_price_min_tick_size,
-      marketData.order_min_size,
-      marketData.end_date_iso,
-      marketData.start_date_iso,
-      marketData.has_reviewed_dates,
-      marketData.clob_token_ids,
-      marketData.uma_bond,
-      marketData.uma_reward,
-      marketData.custom_liveness,
-      marketData.neg_risk_market_id,
-      marketData.neg_risk_request_id,
-      marketData.created_at,
-      marketData.updated_at,
-      marketData.market_event_id
-    ];
-
-    const result = await database.query(query, values);
-    return result.rows[0];
+    return result;
   } catch (error) {
     logger.error('Failed to upsert market', { marketId: marketData.id, error });
     throw error;
@@ -415,25 +211,25 @@ const saveEventWithMarkets = async (event: MarketEvent): Promise<{ event: Market
 };
 
 const upsertTag = async (tagData: TagsInsert): Promise<TagsDB | null> => {
-  if (!database) {
+  if (!database?.prisma) {
     logger.warn('Database not available, skipping tag upsert');
     return null;
   }
 
   try {
-    const query = `
-      INSERT INTO tags (id, label, slug)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (id) DO UPDATE SET
-        label = EXCLUDED.label,
-        slug = EXCLUDED.slug,
-        updated_at = NOW()
-      RETURNING *;
-    `;
+    const result = await database.prisma.tags.upsert({
+      where: { id: tagData.id },
+      create: {
+        ...tagData,
+        updated_at: new Date()
+      },
+      update: {
+        ...tagData,
+        updated_at: new Date()
+      }
+    });
 
-    const values = [tagData.id, tagData.label, tagData.slug];
-    const result = await database.query(query, values);
-    return result.rows[0];
+    return result;
   } catch (error) {
     logger.error('Failed to upsert tag', { tagId: tagData.id, error });
     throw error;
@@ -441,19 +237,25 @@ const upsertTag = async (tagData: TagsInsert): Promise<TagsDB | null> => {
 };
 
 const linkEventToTag = async (eventId: string, tagId: string): Promise<void> => {
-  if (!database) {
+  if (!database?.prisma) {
     logger.warn('Database not available, skipping event-tag link');
     return;
   }
 
   try {
-    const query = `
-      INSERT INTO market_event_tags (market_event_id, tag_id)
-      VALUES ($1, $2)
-      ON CONFLICT (market_event_id, tag_id) DO NOTHING;
-    `;
-
-    await database.query(query, [eventId, tagId]);
+    await database.prisma.market_event_tags.upsert({
+      where: {
+        market_event_id_tag_id: {
+          market_event_id: eventId,
+          tag_id: tagId
+        }
+      },
+      create: {
+        market_event_id: eventId,
+        tag_id: tagId
+      },
+      update: {}
+    });
   } catch (error) {
     logger.error('Failed to link event to tag', { eventId, tagId, error });
     throw error;
@@ -461,19 +263,25 @@ const linkEventToTag = async (eventId: string, tagId: string): Promise<void> => 
 };
 
 const linkMarketToTag = async (marketId: string, tagId: string): Promise<void> => {
-  if (!database) {
+  if (!database?.prisma) {
     logger.warn('Database not available, skipping market-tag link');
     return;
   }
 
   try {
-    const query = `
-      INSERT INTO market_tags (market_id, tag_id)
-      VALUES ($1, $2)
-      ON CONFLICT (market_id, tag_id) DO NOTHING;
-    `;
-
-    await database.query(query, [marketId, tagId]);
+    await database.prisma.market_tags.upsert({
+      where: {
+        market_id_tag_id: {
+          market_id: marketId,
+          tag_id: tagId
+        }
+      },
+      create: {
+        market_id: marketId,
+        tag_id: tagId
+      },
+      update: {}
+    });
   } catch (error) {
     logger.error('Failed to link market to tag', { marketId, tagId, error });
     throw error;
