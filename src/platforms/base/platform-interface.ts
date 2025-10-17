@@ -5,7 +5,6 @@
 export interface PlatformConfig {
   apiUrl: string;
   schema: string;
-  enabled: boolean;
 }
 
 export interface PlatformMarket {
