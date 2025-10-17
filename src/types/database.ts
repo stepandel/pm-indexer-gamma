@@ -21,9 +21,9 @@ export type MarketsInsert = Omit<markets, 'indexed_at' | 'last_updated'> & {
   last_updated?: Date;
 };
 
-export type MarketEventsInsert = Omit<market_events, 'created_at' | 'updated_at'> & {
-  created_at?: Date;
-  updated_at?: Date;
+export type MarketEventsInsert = Omit<market_events, 'indexed_at' | 'last_updated'> & {
+  indexed_at?: Date;
+  last_updated?: Date;
 };
 
 export type TagsInsert = Omit<tags, 'created_at' | 'updated_at'> & {
@@ -44,8 +44,8 @@ export type MarketsUpdate = Partial<Omit<markets, 'id' | 'indexed_at'>> & {
   last_updated?: Date;
 };
 
-export type MarketEventsUpdate = Partial<Omit<market_events, 'id' | 'created_at'>> & {
-  updated_at?: Date;
+export type MarketEventsUpdate = Partial<Omit<market_events, 'id' | 'indexed_at'>> & {
+  last_updated?: Date;
 };
 
 export type TagsUpdate = Partial<Omit<tags, 'id' | 'created_at'>> & {

@@ -109,24 +109,69 @@ model markets {
   @@schema("public")
 }
 
-/// Market events table - keeping for grouping if needed
+/// Market events table - 1:1 mapping with Polymarket Events API
 model market_events {
-  id                String              @id
-  slug              String              @unique
+  // Core identifiers
+  id                String   @id
+  ticker            String?
+  slug              String   @unique
   title             String
   description       String?
+  resolution_source String?  @map("resolutionSource")
+
+  // Dates
+  start_date        DateTime? @map("startDate") @db.Timestamptz(6)
+  creation_date     DateTime? @map("creationDate") @db.Timestamptz(6)
+  end_date          DateTime? @map("endDate") @db.Timestamptz(6)
+
+  // Media
   image             String?
   icon              String?
-  active            Boolean             @default(true)
-  closed            Boolean             @default(false)
-  restricted        Boolean             @default(false)
-  volume            String?             @default("0")
-  liquidity         String?             @default("0")
-  created_at        DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+
+  // Status flags
+  active            Boolean  @default(true)
+  closed            Boolean  @default(false)
+  archived          Boolean  @default(false)
+  new               Boolean  @default(false)
+  featured          Boolean  @default(false)
+  restricted        Boolean  @default(false)
+
+  // Financial data
+  liquidity         Float?   @default(0)
+  volume            Float?   @default(0)
+  open_interest     Float?   @map("openInterest") @default(0)
+  competitive       Float?   @default(0)
+  volume_24hr       Float?   @map("volume24hr")
+  volume_1wk        Float?   @map("volume1wk")
+  volume_1mo        Float?   @map("volume1mo")
+  volume_1yr        Float?   @map("volume1yr")
+  liquidity_clob    Float?   @map("liquidityClob")
+
+  // Settings
+  sort_by           String?  @map("sortBy")
+  enable_order_book Boolean? @map("enableOrderBook")
+  neg_risk          Boolean? @map("negRisk")
+  neg_risk_market_id String? @map("negRiskMarketID")
+
+  // Community metrics
+  comment_count     Int?     @map("commentCount") @default(0)
+
+  // Timestamps (from API)
+  created_at        DateTime @map("createdAt") @db.Timestamptz(6)
+  updated_at        DateTime @map("updatedAt") @db.Timestamptz(6)
+
+  // Internal tracking
+  indexed_at        DateTime @default(now()) @db.Timestamptz(6)
+  last_updated      DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
   market_event_tags market_event_tags[]
   markets           markets[]
 
+  @@index([active], map: "idx_market_events_active")
+  @@index([closed], map: "idx_market_events_closed")
+  @@index([featured], map: "idx_market_events_featured")
+  @@index([ticker], map: "idx_market_events_ticker")
   @@schema("public")
 }
 

@@ -21,35 +21,89 @@ const upsertMarketEvent = async (eventData: MarketEventsInsert): Promise<MarketE
   try {
     const query = `
       INSERT INTO market_events (
-        id, slug, title, description, image, icon, active, closed, restricted, volume, liquidity
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        id, ticker, slug, title, description, resolution_source,
+        start_date, creation_date, end_date, image, icon,
+        active, closed, archived, new, featured, restricted,
+        liquidity, volume, open_interest, competitive,
+        volume_24hr, volume_1wk, volume_1mo, volume_1yr, liquidity_clob,
+        sort_by, enable_order_book, neg_risk, neg_risk_market_id,
+        comment_count, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+        $31, $32, $33
+      )
       ON CONFLICT (id) DO UPDATE SET
+        ticker = EXCLUDED.ticker,
         slug = EXCLUDED.slug,
         title = EXCLUDED.title,
         description = EXCLUDED.description,
+        resolution_source = EXCLUDED.resolution_source,
+        start_date = EXCLUDED.start_date,
+        creation_date = EXCLUDED.creation_date,
+        end_date = EXCLUDED.end_date,
         image = EXCLUDED.image,
         icon = EXCLUDED.icon,
         active = EXCLUDED.active,
         closed = EXCLUDED.closed,
+        archived = EXCLUDED.archived,
+        new = EXCLUDED.new,
+        featured = EXCLUDED.featured,
         restricted = EXCLUDED.restricted,
-        volume = EXCLUDED.volume,
         liquidity = EXCLUDED.liquidity,
-        updated_at = NOW()
+        volume = EXCLUDED.volume,
+        open_interest = EXCLUDED.open_interest,
+        competitive = EXCLUDED.competitive,
+        volume_24hr = EXCLUDED.volume_24hr,
+        volume_1wk = EXCLUDED.volume_1wk,
+        volume_1mo = EXCLUDED.volume_1mo,
+        volume_1yr = EXCLUDED.volume_1yr,
+        liquidity_clob = EXCLUDED.liquidity_clob,
+        sort_by = EXCLUDED.sort_by,
+        enable_order_book = EXCLUDED.enable_order_book,
+        neg_risk = EXCLUDED.neg_risk,
+        neg_risk_market_id = EXCLUDED.neg_risk_market_id,
+        comment_count = EXCLUDED.comment_count,
+        updated_at = EXCLUDED.updated_at,
+        last_updated = NOW()
       RETURNING *;
     `;
 
     const values = [
       eventData.id,
+      eventData.ticker,
       eventData.slug,
       eventData.title,
       eventData.description,
+      eventData.resolution_source,
+      eventData.start_date,
+      eventData.creation_date,
+      eventData.end_date,
       eventData.image,
       eventData.icon,
       eventData.active,
       eventData.closed,
+      eventData.archived,
+      eventData.new,
+      eventData.featured,
       eventData.restricted,
+      eventData.liquidity,
       eventData.volume,
-      eventData.liquidity
+      eventData.open_interest,
+      eventData.competitive,
+      eventData.volume_24hr,
+      eventData.volume_1wk,
+      eventData.volume_1mo,
+      eventData.volume_1yr,
+      eventData.liquidity_clob,
+      eventData.sort_by,
+      eventData.enable_order_book,
+      eventData.neg_risk,
+      eventData.neg_risk_market_id,
+      eventData.comment_count,
+      eventData.created_at,
+      eventData.updated_at
     ];
 
     const result = await database.query(query, values);
@@ -278,16 +332,38 @@ const transformMarketToDb = (market: Market, eventId?: string): MarketsInsert =>
 const transformEventToDb = (event: MarketEvent): MarketEventsInsert => {
   return {
     id: event.id,
+    ticker: event.ticker || null,
     slug: event.slug,
     title: event.title,
     description: event.description || null,
+    resolution_source: event.resolutionSource || null,
+    start_date: event.startDate ? new Date(event.startDate) : null,
+    creation_date: event.creationDate ? new Date(event.creationDate) : null,
+    end_date: event.endDate ? new Date(event.endDate) : null,
     image: event.image || null,
     icon: event.icon || null,
     active: event.active,
     closed: event.closed,
+    archived: event.archived,
+    new: event.new,
+    featured: event.featured,
     restricted: event.restricted,
-    volume: event.volume || '0',
-    liquidity: event.liquidity || '0'
+    liquidity: event.liquidity || 0,
+    volume: event.volume || 0,
+    open_interest: event.openInterest || 0,
+    competitive: event.competitive || 0,
+    volume_24hr: event.volume24hr || null,
+    volume_1wk: event.volume1wk || null,
+    volume_1mo: event.volume1mo || null,
+    volume_1yr: event.volume1yr || null,
+    liquidity_clob: event.liquidityClob || null,
+    sort_by: event.sortBy || null,
+    enable_order_book: event.enableOrderBook || null,
+    neg_risk: event.negRisk || null,
+    neg_risk_market_id: event.negRiskMarketID || null,
+    comment_count: event.commentCount || 0,
+    created_at: new Date(event.createdAt),
+    updated_at: new Date(event.updatedAt)
   };
 };
 

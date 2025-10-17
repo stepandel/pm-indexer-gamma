@@ -58,19 +58,39 @@ export interface Market {
 
 export interface MarketEvent {
   id: string;
+  ticker: string;
   slug: string;
   title: string;
   description: string;
+  resolutionSource: string;
+  startDate: string;
+  creationDate: string;
+  endDate: string;
   image: string;
   icon: string;
   active: boolean;
   closed: boolean;
+  archived: boolean;
+  new: boolean;
+  featured: boolean;
   restricted: boolean;
-  volume: string;
-  liquidity: string;
-  markets: Market[];
+  liquidity: number;
+  volume: number;
+  openInterest: number;
+  sortBy: string;
   createdAt: string;
   updatedAt: string;
+  competitive: number;
+  volume24hr: number;
+  volume1wk: number;
+  volume1mo: number;
+  volume1yr: number;
+  enableOrderBook: boolean;
+  liquidityClob: number;
+  negRisk: boolean;
+  negRiskMarketID: string;
+  commentCount: number;
+  markets: Market[];
   tags: Tags[];
 }
 
