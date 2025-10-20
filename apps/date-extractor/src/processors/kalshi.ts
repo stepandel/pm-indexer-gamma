@@ -1,19 +1,54 @@
-import { logger } from '@prediction-markets/shared';
-import { BaseProcessor } from './base.js';
-import { ProcessingResult, ProcessingStats } from '../types.js';
+import { logger } from "@prediction-markets/shared";
+import { BaseProcessor } from "./base.js";
+import { ProcessingResult, ProcessingStats } from "../types.js";
 
 /**
  * Kalshi-specific date extraction processor
  */
 export class KalshiProcessor extends BaseProcessor {
-  private readonly tableName = 'kalshi.event_date';
-  private readonly eventsTable = 'kalshi.events';
+  private readonly tableName = "kalshi.event_date";
+  private readonly eventsTable = "kalshi.events";
+  private readonly marketsTable = "kalshi.markets";
+
+  /**
+   * Get the maximum close_time from all markets for a given event
+   */
+  private async getMaxCloseTimeForEvent(
+    eventTicker: string
+  ): Promise<Date | null> {
+    try {
+      const query = `
+        SELECT MAX(close_time) as max_close_time
+        FROM ${this.marketsTable}
+        WHERE event_ticker = $1 AND close_time IS NOT NULL
+      `;
+
+      const result = await this.db.query(query, [eventTicker]);
+      const maxCloseTime = result?.rows?.[0]?.max_close_time;
+
+      return maxCloseTime ? new Date(maxCloseTime) : null;
+    } catch (error) {
+      logger.error(
+        `Failed to get max close_time for event ${eventTicker}:`,
+        error
+      );
+      return null;
+    }
+  }
 
   /**
    * Process Kalshi events for date extraction
    */
-  async processEventsForDates(offset: number = 0, limit: number = 1000): Promise<ProcessingResult> {
-    const results: ProcessingResult = { processed: 0, datesFound: 0, eventsUpdated: 0, errors: 0 };
+  async processEventsForDates(
+    offset: number = 0,
+    limit: number = 1000
+  ): Promise<ProcessingResult> {
+    const results: ProcessingResult = {
+      processed: 0,
+      datesFound: 0,
+      eventsUpdated: 0,
+      errors: 0,
+    };
 
     try {
       // Get events from Kalshi
@@ -31,7 +66,9 @@ export class KalshiProcessor extends BaseProcessor {
         return results;
       }
 
-      logger.info(`📦 Processing batch: ${events.length} Kalshi events (offset ${offset})`);
+      logger.info(
+        `📦 Processing batch: ${events.length} Kalshi events (offset ${offset})`
+      );
 
       for (const event of events) {
         try {
@@ -39,43 +76,74 @@ export class KalshiProcessor extends BaseProcessor {
           const dates = this.dateExtractor.extractEventDates({
             title: event.title,
             description: event.sub_title,
-            slug: event.event_ticker
+            slug: event.event_ticker,
           });
 
-          if (dates.length > 0) {
-            // Find the best date (highest confidence)
-            const bestDate = dates.reduce((prev, current) =>
-              current.confidence > prev.confidence ? current : prev
+          // Find the best date (highest confidence)
+          let bestDate = dates.reduce((prev, current) =>
+            current.confidence > prev.confidence ? current : prev
+          );
+
+          // If no date found or confidence too low, try fallback to market close_time
+          if (!bestDate || bestDate.confidence < 0.6) {
+            const maxCloseTime = await this.getMaxCloseTimeForEvent(
+              event.event_ticker
             );
 
-            // Only store if confidence is above threshold
-            if (bestDate.confidence >= 0.6) {
-              if (await this.upsertEventDate(event.event_ticker, bestDate, this.tableName)) {
-                results.eventsUpdated += 1;
-                logger.info(`   ✓ Event ${event.event_ticker}: ${bestDate.dateTime.toISOString().split('T')[0]} (confidence: ${bestDate.confidence.toFixed(2)}) [${bestDate.source}]`);
+            if (maxCloseTime) {
+              bestDate = {
+                dateTime: maxCloseTime,
+                confidence: 0.5, // Lower confidence for fallback dates
+                matchedText: "fallback_market_close_time",
+                source: "market_close_time",
+                patternType: "market_fallback",
+              };
+
+              if (!dates.length) {
+                results.datesFound += 1; // Count fallback as found date
               }
             }
+          }
 
-            results.datesFound += dates.length;
+          // Store the date if we have one above threshold
+          if (bestDate && bestDate.confidence >= 0.5) {
+            // Lower threshold to include fallback dates
+            if (
+              await this.upsertEventDate(
+                event.event_ticker,
+                bestDate,
+                this.tableName
+              )
+            ) {
+              results.eventsUpdated += 1;
+              logger.info(
+                `   ✓ Event ${event.event_ticker}: ${bestDate.dateTime.toISOString().split("T")[0]} (confidence: ${bestDate.confidence.toFixed(2)}) [${bestDate.source}]`
+              );
+            }
           }
 
           results.processed += 1;
 
           // Progress indicator (less frequent for speed)
           if (results.processed % 100 === 0) {
-            logger.info(`   ⚙️  Processed ${results.processed}/${events.length} events...`);
+            logger.info(
+              `   ⚙️  Processed ${results.processed}/${events.length} events...`
+            );
           }
-
         } catch (error) {
-          logger.error(`   ✗ Error processing event ${event.event_ticker}:`, error);
+          logger.error(
+            `   ✗ Error processing event ${event.event_ticker}:`,
+            error
+          );
           results.errors += 1;
         }
       }
 
-      logger.info(`   ✓ Batch completed: ${results.eventsUpdated} events updated`);
-
+      logger.info(
+        `   ✓ Batch completed: ${results.eventsUpdated} events updated`
+      );
     } catch (error) {
-      logger.error('✗ Batch processing failed:', error);
+      logger.error("✗ Batch processing failed:", error);
       results.errors = limit;
     }
 
@@ -88,8 +156,10 @@ export class KalshiProcessor extends BaseProcessor {
   async getDateExtractionStats(): Promise<ProcessingStats> {
     try {
       // Total event dates
-      const totalDatesResult = await this.db.query(`SELECT COUNT(*) as total FROM ${this.tableName}`);
-      const totalDates = parseInt(totalDatesResult?.rows?.[0]?.total || '0');
+      const totalDatesResult = await this.db.query(
+        `SELECT COUNT(*) as total FROM ${this.tableName}`
+      );
+      const totalDates = parseInt(totalDatesResult?.rows?.[0]?.total || "0");
 
       // Confidence distribution
       const confidenceDistResult = await this.db.query(`
@@ -114,32 +184,38 @@ export class KalshiProcessor extends BaseProcessor {
       `);
 
       // Total events vs events with dates
-      const totalEventsResult = await this.db.query(`SELECT COUNT(*) as total FROM ${this.eventsTable}`);
-      const totalEvents = parseInt(totalEventsResult?.rows?.[0]?.total || '0');
+      const totalEventsResult = await this.db.query(
+        `SELECT COUNT(*) as total FROM ${this.eventsTable}`
+      );
+      const totalEvents = parseInt(totalEventsResult?.rows?.[0]?.total || "0");
 
       return {
         totalDates,
         totalEvents,
-        coveragePercent: totalEvents > 0 ? Math.round((totalDates / totalEvents * 100) * 100) / 100 : 0,
-        confidenceDistribution: (confidenceDistResult?.rows || []).map(row => ({
-          confidenceLevel: row.confidence_level,
-          count: parseInt(row.count)
-        })),
-        sampleDates: (sampleDatesResult?.rows || []).map(row => ({
+        coveragePercent:
+          totalEvents > 0
+            ? Math.round((totalDates / totalEvents) * 100 * 100) / 100
+            : 0,
+        confidenceDistribution: (confidenceDistResult?.rows || []).map(
+          (row) => ({
+            confidenceLevel: row.confidence_level,
+            count: parseInt(row.count),
+          })
+        ),
+        sampleDates: (sampleDatesResult?.rows || []).map((row) => ({
           eventId: row.event_id,
           eventTimeUtc: row.event_time_utc,
-          confidence: parseFloat(row.confidence)
-        }))
+          confidence: parseFloat(row.confidence),
+        })),
       };
-
     } catch (error) {
-      logger.error('✗ Failed to get Kalshi date extraction stats:', error);
+      logger.error("✗ Failed to get Kalshi date extraction stats:", error);
       return {
         totalDates: 0,
         totalEvents: 0,
         coveragePercent: 0,
         confidenceDistribution: [],
-        sampleDates: []
+        sampleDates: [],
       };
     }
   }
@@ -166,21 +242,27 @@ export class KalshiProcessor extends BaseProcessor {
         const event = sampleEvents[i];
         logger.info(`\n--- Event ${i + 1}: ${event.event_ticker} ---`);
         logger.info(`Title: ${event.title}`);
-        logger.info(`Subtitle: ${event.sub_title || 'N/A'}`);
-        logger.info(`Category: ${event.category || 'N/A'}`);
+        logger.info(`Subtitle: ${event.sub_title || "N/A"}`);
+        logger.info(`Category: ${event.category || "N/A"}`);
 
         // Extract dates
         const dates = this.dateExtractor.extractEventDates({
           title: event.title,
           description: event.sub_title,
-          slug: event.event_ticker
+          slug: event.event_ticker,
         });
 
         if (dates.length > 0) {
           logger.info(`📅 Found ${dates.length} date matches:`);
-          for (const dateMatch of dates.sort((a, b) => b.confidence - a.confidence)) {
-            logger.info(`   • ${dateMatch.dateTime.toISOString().split('T')[0]}: "${dateMatch.matchedText}"`);
-            logger.info(`     Confidence: ${dateMatch.confidence.toFixed(2)}, Source: ${dateMatch.source}`);
+          for (const dateMatch of dates.sort(
+            (a, b) => b.confidence - a.confidence
+          )) {
+            logger.info(
+              `   • ${dateMatch.dateTime.toISOString().split("T")[0]}: "${dateMatch.matchedText}"`
+            );
+            logger.info(
+              `     Confidence: ${dateMatch.confidence.toFixed(2)}, Source: ${dateMatch.source}`
+            );
             logger.info(`     Pattern: ${dateMatch.patternType}`);
             if (dateMatch.timeRange) {
               logger.info(`     Time: ${dateMatch.timeRange}`);
@@ -194,7 +276,7 @@ export class KalshiProcessor extends BaseProcessor {
         }
       }
     } catch (error) {
-      logger.error('✗ Error in test mode:', error);
+      logger.error("✗ Error in test mode:", error);
     }
   }
 
@@ -221,16 +303,23 @@ export class KalshiProcessor extends BaseProcessor {
       const remaining = totalEvents - offset;
       const currentBatchSize = Math.min(batchSize, remaining);
 
-      logger.info(`\n--- Batch ${batchNum} (${offset + 1}-${offset + currentBatchSize} of ${totalEvents}) ---`);
+      logger.info(
+        `\n--- Batch ${batchNum} (${offset + 1}-${offset + currentBatchSize} of ${totalEvents}) ---`
+      );
 
-      const results = await this.processEventsForDates(offset, currentBatchSize);
+      const results = await this.processEventsForDates(
+        offset,
+        currentBatchSize
+      );
 
       totalProcessed += results.processed;
       totalDates += results.datesFound;
       totalEventsUpdated += results.eventsUpdated;
       totalErrors += results.errors;
 
-      logger.info(`Progress: ${totalProcessed}/${totalEvents} events (${(totalProcessed / totalEvents * 100).toFixed(1)}%)`);
+      logger.info(
+        `Progress: ${totalProcessed}/${totalEvents} events (${((totalProcessed / totalEvents) * 100).toFixed(1)}%)`
+      );
 
       offset += currentBatchSize;
       batchNum += 1;
