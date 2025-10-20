@@ -168,6 +168,7 @@ model polymarket_market_events {
   // Relations
   market_event_tags polymarket_market_event_tags[]
   markets           polymarket_markets[]
+  event_date        polymarket_event_date?
 
   @@index([active], map: "idx_polymarket_market_events_active")
   @@index([closed], map: "idx_polymarket_market_events_closed")
@@ -242,6 +243,7 @@ model kalshi_events {
 
   // Relationships
   markets               kalshi_markets[]
+  event_date            kalshi_event_date?
 
   // Timestamps
   created_at           DateTime @default(now()) @db.Timestamptz(6)
@@ -311,5 +313,57 @@ model kalshi_markets {
   @@index([status], map: "idx_kalshi_markets_status")
   @@index([market_type], map: "idx_kalshi_markets_type")
   @@map("markets")
+  @@schema("kalshi")
+}
+
+/// Polymarket Event Date table - extracted resolution dates
+model polymarket_event_date {
+  // Core identifiers
+  event_id        String   @id
+  event_time_utc  DateTime @db.Timestamptz(6)
+  confidence      Float
+
+  // Extraction details
+  extracted_text  String?
+  pattern_type    String?
+  timezone_abbr   String?
+  time_range      String?
+
+  // Timestamps
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  market_event    polymarket_market_events @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@index([confidence], map: "idx_polymarket_event_date_confidence")
+  @@index([event_time_utc], map: "idx_polymarket_event_date_time")
+  @@map("event_date")
+  @@schema("polymarket")
+}
+
+/// Kalshi Event Date table - extracted resolution dates
+model kalshi_event_date {
+  // Core identifiers
+  event_id        String   @id
+  event_time_utc  DateTime @db.Timestamptz(6)
+  confidence      Float
+
+  // Extraction details
+  extracted_text  String?
+  pattern_type    String?
+  timezone_abbr   String?
+  time_range      String?
+
+  // Timestamps
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  event           kalshi_events @relation(fields: [event_id], references: [event_ticker], onDelete: Cascade)
+
+  @@index([confidence], map: "idx_kalshi_event_date_confidence")
+  @@index([event_time_utc], map: "idx_kalshi_event_date_time")
+  @@map("event_date")
   @@schema("kalshi")
 }

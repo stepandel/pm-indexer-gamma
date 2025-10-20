@@ -1,0 +1,18 @@
+
+> @prediction-markets/date-extractor@1.0.0 build /Users/stars/Development/Polymarket/indexer-gamma/apps/date-extractor
+> tsc
+
+src/processors/base.ts(51,13): error TS2531: Object is possibly 'null'.
+src/processors/kalshi.ts(27,28): error TS2531: Object is possibly 'null'.
+src/processors/kalshi.ts(90,38): error TS2531: Object is possibly 'null'.
+src/processors/kalshi.ts(94,42): error TS2531: Object is possibly 'null'.
+src/processors/kalshi.ts(108,39): error TS2531: Object is possibly 'null'.
+src/processors/kalshi.ts(116,39): error TS2531: Object is possibly 'null'.
+src/processors/kalshi.ts(161,34): error TS2531: Object is possibly 'null'.
+src/processors/polymarket.ts(27,28): error TS2531: Object is possibly 'null'.
+src/processors/polymarket.ts(90,38): error TS2531: Object is possibly 'null'.
+src/processors/polymarket.ts(94,42): error TS2531: Object is possibly 'null'.
+src/processors/polymarket.ts(108,39): error TS2531: Object is possibly 'null'.
+src/processors/polymarket.ts(116,39): error TS2531: Object is possibly 'null'.
+src/processors/polymarket.ts(161,34): error TS2531: Object is possibly 'null'.
+ ELIFECYCLE  Command failed with exit code 2.
