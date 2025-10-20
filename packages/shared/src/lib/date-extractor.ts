@@ -87,8 +87,8 @@ export class DateExtractor {
         // Parse time if available - use end time for ranges
         let { hour, minute } = this.parseTimeString(timePart || '0:00', true); // true for preferEndTime
 
-        // Create datetime with parsed time
-        let dateTime = new Date(year, month - 1, day, hour, minute);
+        // Create datetime with parsed time in UTC
+        let dateTime = new Date(Date.UTC(year, month - 1, day, hour, minute));
 
         // Apply timezone conversion
         if (timezonePart) {
@@ -139,7 +139,7 @@ export class DateExtractor {
         const year = parseInt(yearStr);
         const month = parseInt(monthStr);
         const day = parseInt(dayStr);
-        const dateTime = new Date(year, month - 1, day);
+        const dateTime = new Date(Date.UTC(year, month - 1, day));
 
         matches.push({
           dateTime,
@@ -169,7 +169,7 @@ export class DateExtractor {
 
       // Assume MM/DD/YYYY format for US markets
       try {
-        const dateTime = new Date(year, part1 - 1, part2);
+        const dateTime = new Date(Date.UTC(year, part1 - 1, part2));
 
         matches.push({
           dateTime,
@@ -181,7 +181,7 @@ export class DateExtractor {
       } catch (error) {
         // Try DD/MM/YYYY if MM/DD/YYYY fails
         try {
-          const dateTime = new Date(year, part2 - 1, part1);
+          const dateTime = new Date(Date.UTC(year, part2 - 1, part1));
 
           matches.push({
             dateTime,
@@ -226,7 +226,7 @@ export class DateExtractor {
 
         // Use current year, but if the date has passed, use next year
         let year = this.currentYear;
-        let dateTime = new Date(year, month - 1, day, hour, minute);
+        let dateTime = new Date(Date.UTC(year, month - 1, day, hour, minute));
 
         // Apply timezone for comparison
         if (timezonePart) {
@@ -236,7 +236,7 @@ export class DateExtractor {
         // If the datetime has passed, use next year
         if (dateTime < new Date()) {
           year += 1;
-          dateTime = new Date(year, month - 1, day, hour, minute);
+          dateTime = new Date(Date.UTC(year, month - 1, day, hour, minute));
           if (timezonePart) {
             dateTime = this.applyTimezone(dateTime, timezonePart);
           }
@@ -285,8 +285,8 @@ export class DateExtractor {
         const targetYear = parseInt(yearStr);
         const previousYear = targetYear - 1;
 
-        // Last minute of previous year (Dec 31, 11:59 PM)
-        const dateTime = new Date(previousYear, 11, 31, 23, 59, 59);
+        // Last minute of previous year (Dec 31, 11:59 PM UTC)
+        const dateTime = new Date(Date.UTC(previousYear, 11, 31, 23, 59, 59));
 
         matches.push({
           dateTime,
@@ -312,8 +312,8 @@ export class DateExtractor {
       try {
         const year = parseInt(yearStr);
 
-        // Last minute of the year (Dec 31, 11:59 PM)
-        const dateTime = new Date(year, 11, 31, 23, 59, 59);
+        // Last minute of the year (Dec 31, 11:59 PM UTC)
+        const dateTime = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
         matches.push({
           dateTime,
@@ -340,8 +340,8 @@ export class DateExtractor {
         const targetYear = parseInt(yearStr);
         const previousYear = targetYear - 1;
 
-        // Last minute of previous year (Dec 31, 11:59 PM)
-        const dateTime = new Date(previousYear, 11, 31, 23, 59, 59);
+        // Last minute of previous year (Dec 31, 11:59 PM UTC)
+        const dateTime = new Date(Date.UTC(previousYear, 11, 31, 23, 59, 59));
 
         matches.push({
           dateTime,
