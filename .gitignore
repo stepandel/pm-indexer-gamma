@@ -178,4 +178,4 @@ dist
 /src/generated/prisma
 
 
-*/.turbo
+.turbo/
