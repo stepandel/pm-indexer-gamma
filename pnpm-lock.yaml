@@ -34,6 +34,25 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
+  apps/date-extractor:
+    dependencies:
+      '@prediction-markets/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@prediction-markets/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.22
+      tsx:
+        specifier: ^4.0.0
+        version: 4.20.6
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   apps/indexer:
     dependencies:
       '@prediction-markets/shared':

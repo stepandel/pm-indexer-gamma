@@ -5,101 +5,70 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["public", "polymarket", "kalshi"]
+  schemas  = ["kalshi", "polymarket", "public"]
 }
 
 /// Polymarket Markets table - 1:1 mapping with Polymarket API
 model polymarket_markets {
-  // Core identifiers
-  id                    String   @id
-  question              String
-  condition_id          String?  @map("conditionId")
-  slug                  String
-  resolution_source     String?  @map("resolutionSource")
-
-  // Dates
-  end_date              DateTime? @map("endDate") @db.Timestamptz(6)
-  start_date            DateTime? @map("startDate") @db.Timestamptz(6)
-
-  // Media
-  image                 String?
-  icon                  String?
-  description           String?
-
-  // API response fields (JSON strings as they come from API)
-  outcomes              String   // JSON array: ["Yes", "No"]
-  outcome_prices        String   @map("outcomePrices") // JSON array: ["0.891", "0.109"]
-
-  // Financial data (keeping as strings to match API exactly)
-  volume                String
-  liquidity             String
-  volume_num            Float?   @map("volumeNum")
-  liquidity_num         Float?   @map("liquidityNum")
-  volume_24hr           Float?   @map("volume24hr")
-  volume_1wk            Float?   @map("volume1wk")
-  volume_1mo            Float?   @map("volume1mo")
-  volume_1yr            Float?   @map("volume1yr")
-  volume_clob           Float?   @map("volumeClob")
-  liquidity_clob        Float?   @map("liquidityClob")
-  volume_24hr_clob      Float?   @map("volume24hrClob")
-  volume_1wk_clob       Float?   @map("volume1wkClob")
-  volume_1mo_clob       Float?   @map("volume1moClob")
-  volume_1yr_clob       Float?   @map("volume1yrClob")
-
-  // Status flags
-  active                Boolean  @default(true)
-  closed                Boolean  @default(false)
-  archived              Boolean  @default(false)
-  new                   Boolean  @default(false)
-  featured              Boolean  @default(false)
-  restricted            Boolean  @default(false)
-  accepting_orders      Boolean? @map("acceptingOrders")
-  neg_risk              Boolean? @map("negRisk")
-
-  // Market maker and addresses
-  market_maker_address  String?  @map("marketMakerAddress")
-  submitted_by          String?  @map("submittedBy")
-  resolved_by           String?  @map("resolvedBy")
-
-  // Grouping
-  group_item_title      String?  @map("groupItemTitle")
-  group_item_threshold  String?  @map("groupItemThreshold")
-
-  // Trading parameters
-  question_id           String?  @map("questionID")
-  enable_order_book     Boolean? @map("enableOrderBook")
-  order_price_min_tick_size Float? @map("orderPriceMinTickSize")
-  order_min_size        Float?   @map("orderMinSize")
-
-  // Date helpers
-  end_date_iso          String?  @map("endDateIso")
-  start_date_iso        String?  @map("startDateIso")
-  has_reviewed_dates    Boolean? @map("hasReviewedDates")
-
-  // CLOB token IDs (JSON array)
-  clob_token_ids        String?  @map("clobTokenIds")
-
-  // UMA parameters
-  uma_bond              String?  @map("umaBond")
-  uma_reward            String?  @map("umaReward")
-  custom_liveness       Int?     @map("customLiveness")
-
-  // Neg risk fields
-  neg_risk_market_id    String?  @map("negRiskMarketID")
-  neg_risk_request_id   String?  @map("negRiskRequestID")
-
-  // Timestamps (from API)
-  created_at            DateTime @map("createdAt") @db.Timestamptz(6)
-  updated_at            DateTime @map("updatedAt") @db.Timestamptz(6)
-
-  // Internal tracking
-  indexed_at            DateTime @default(now()) @db.Timestamptz(6)
-  last_updated          DateTime @default(now()) @db.Timestamptz(6)
-
-  // Relations (if you still want to track events separately)
-  market_event_id       String?
-  market_events         polymarket_market_events? @relation(fields: [market_event_id], references: [id], onUpdate: NoAction)
-  market_tags           polymarket_market_tags[]
+  id                        String                    @id
+  question                  String
+  condition_id              String?                   @map("conditionId")
+  slug                      String
+  resolution_source         String?                   @map("resolutionSource")
+  end_date                  DateTime?                 @map("endDate") @db.Timestamptz(6)
+  start_date                DateTime?                 @map("startDate") @db.Timestamptz(6)
+  image                     String?
+  icon                      String?
+  description               String?
+  outcomes                  String
+  outcome_prices            String                    @map("outcomePrices")
+  volume                    String
+  liquidity                 String
+  volume_num                Float?                    @map("volumeNum")
+  liquidity_num             Float?                    @map("liquidityNum")
+  volume_24hr               Float?                    @map("volume24hr")
+  volume_1wk                Float?                    @map("volume1wk")
+  volume_1mo                Float?                    @map("volume1mo")
+  volume_1yr                Float?                    @map("volume1yr")
+  volume_clob               Float?                    @map("volumeClob")
+  liquidity_clob            Float?                    @map("liquidityClob")
+  volume_24hr_clob          Float?                    @map("volume24hrClob")
+  volume_1wk_clob           Float?                    @map("volume1wkClob")
+  volume_1mo_clob           Float?                    @map("volume1moClob")
+  volume_1yr_clob           Float?                    @map("volume1yrClob")
+  active                    Boolean                   @default(true)
+  closed                    Boolean                   @default(false)
+  archived                  Boolean                   @default(false)
+  new                       Boolean                   @default(false)
+  featured                  Boolean                   @default(false)
+  restricted                Boolean                   @default(false)
+  accepting_orders          Boolean?                  @map("acceptingOrders")
+  neg_risk                  Boolean?                  @map("negRisk")
+  market_maker_address      String?                   @map("marketMakerAddress")
+  submitted_by              String?                   @map("submittedBy")
+  resolved_by               String?                   @map("resolvedBy")
+  group_item_title          String?                   @map("groupItemTitle")
+  group_item_threshold      String?                   @map("groupItemThreshold")
+  question_id               String?                   @map("questionID")
+  enable_order_book         Boolean?                  @map("enableOrderBook")
+  order_price_min_tick_size Float?                    @map("orderPriceMinTickSize")
+  order_min_size            Float?                    @map("orderMinSize")
+  end_date_iso              String?                   @map("endDateIso")
+  start_date_iso            String?                   @map("startDateIso")
+  has_reviewed_dates        Boolean?                  @map("hasReviewedDates")
+  clob_token_ids            String?                   @map("clobTokenIds")
+  uma_bond                  String?                   @map("umaBond")
+  uma_reward                String?                   @map("umaReward")
+  custom_liveness           Int?                      @map("customLiveness")
+  neg_risk_market_id        String?                   @map("negRiskMarketID")
+  neg_risk_request_id       String?                   @map("negRiskRequestID")
+  created_at                DateTime                  @map("createdAt") @db.Timestamptz(6)
+  updated_at                DateTime                  @map("updatedAt") @db.Timestamptz(6)
+  indexed_at                DateTime                  @default(now()) @db.Timestamptz(6)
+  last_updated              DateTime                  @default(now()) @db.Timestamptz(6)
+  market_event_id           String?
+  market_tags               polymarket_market_tags[]
+  market_events             polymarket_market_events? @relation(fields: [market_event_id], references: [id], onUpdate: NoAction)
 
   @@index([market_event_id], map: "idx_polymarket_markets_market_event_id")
   @@index([active], map: "idx_polymarket_markets_active")
@@ -112,62 +81,44 @@ model polymarket_markets {
 
 /// Polymarket Market events table - 1:1 mapping with Polymarket Events API
 model polymarket_market_events {
-  // Core identifiers
-  id                String   @id
-  ticker            String?
-  slug              String   @unique
-  title             String
-  description       String?
-  resolution_source String?  @map("resolutionSource")
-
-  // Dates
-  start_date        DateTime? @map("startDate") @db.Timestamptz(6)
-  creation_date     DateTime? @map("creationDate") @db.Timestamptz(6)
-  end_date          DateTime? @map("endDate") @db.Timestamptz(6)
-
-  // Media
-  image             String?
-  icon              String?
-
-  // Status flags
-  active            Boolean  @default(true)
-  closed            Boolean  @default(false)
-  archived          Boolean  @default(false)
-  new               Boolean  @default(false)
-  featured          Boolean  @default(false)
-  restricted        Boolean  @default(false)
-
-  // Financial data
-  liquidity         Float?   @default(0)
-  volume            Float?   @default(0)
-  open_interest     Float?   @map("openInterest") @default(0)
-  competitive       Float?   @default(0)
-  volume_24hr       Float?   @map("volume24hr")
-  volume_1wk        Float?   @map("volume1wk")
-  volume_1mo        Float?   @map("volume1mo")
-  volume_1yr        Float?   @map("volume1yr")
-  liquidity_clob    Float?   @map("liquidityClob")
-
-  // Settings
-  sort_by           String?  @map("sortBy")
-  enable_order_book Boolean? @map("enableOrderBook")
-  neg_risk          Boolean? @map("negRisk")
-  neg_risk_market_id String? @map("negRiskMarketID")
-
-  // Community metrics
-  comment_count     Int?     @map("commentCount") @default(0)
-
-  // Timestamps (from API)
-  created_at        DateTime @map("createdAt") @db.Timestamptz(6)
-  updated_at        DateTime @map("updatedAt") @db.Timestamptz(6)
-
-  // Internal tracking
-  indexed_at        DateTime @default(now()) @db.Timestamptz(6)
-  last_updated      DateTime @default(now()) @db.Timestamptz(6)
-
-  // Relations
-  market_event_tags polymarket_market_event_tags[]
-  markets           polymarket_markets[]
+  id                 String                         @id
+  ticker             String?
+  slug               String                         @unique
+  title              String
+  description        String?
+  resolution_source  String?                        @map("resolutionSource")
+  start_date         DateTime?                      @map("startDate") @db.Timestamptz(6)
+  creation_date      DateTime?                      @map("creationDate") @db.Timestamptz(6)
+  end_date           DateTime?                      @map("endDate") @db.Timestamptz(6)
+  image              String?
+  icon               String?
+  active             Boolean                        @default(true)
+  closed             Boolean                        @default(false)
+  archived           Boolean                        @default(false)
+  new                Boolean                        @default(false)
+  featured           Boolean                        @default(false)
+  restricted         Boolean                        @default(false)
+  liquidity          Float?                         @default(0)
+  volume             Float?                         @default(0)
+  open_interest      Float?                         @default(0) @map("openInterest")
+  competitive        Float?                         @default(0)
+  volume_24hr        Float?                         @map("volume24hr")
+  volume_1wk         Float?                         @map("volume1wk")
+  volume_1mo         Float?                         @map("volume1mo")
+  volume_1yr         Float?                         @map("volume1yr")
+  liquidity_clob     Float?                         @map("liquidityClob")
+  sort_by            String?                        @map("sortBy")
+  enable_order_book  Boolean?                       @map("enableOrderBook")
+  neg_risk           Boolean?                       @map("negRisk")
+  neg_risk_market_id String?                        @map("negRiskMarketID")
+  comment_count      Int?                           @default(0) @map("commentCount")
+  created_at         DateTime                       @map("createdAt") @db.Timestamptz(6)
+  updated_at         DateTime                       @map("updatedAt") @db.Timestamptz(6)
+  indexed_at         DateTime                       @default(now()) @db.Timestamptz(6)
+  last_updated       DateTime                       @default(now()) @db.Timestamptz(6)
+  event_date         polymarket_event_date?
+  market_event_tags  polymarket_market_event_tags[]
+  markets            polymarket_markets[]
 
   @@index([active], map: "idx_polymarket_market_events_active")
   @@index([closed], map: "idx_polymarket_market_events_closed")
@@ -179,11 +130,11 @@ model polymarket_market_events {
 
 /// Polymarket Tags for categorization
 model polymarket_tags {
-  id                String                           @id
+  id                String                         @id
   label             String
-  slug              String                           @unique
-  created_at        DateTime                         @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime                         @default(now()) @db.Timestamptz(6)
+  slug              String                         @unique
+  created_at        DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime                       @default(now()) @db.Timestamptz(6)
   market_event_tags polymarket_market_event_tags[]
   market_tags       polymarket_market_tags[]
 
@@ -195,9 +146,9 @@ model polymarket_tags {
 model polymarket_market_tags {
   market_id  String
   tag_id     String
-  created_at DateTime            @default(now()) @db.Timestamptz(6)
-  markets    polymarket_markets  @relation(fields: [market_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tags       polymarket_tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at DateTime           @default(now()) @db.Timestamptz(6)
+  markets    polymarket_markets @relation(fields: [market_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags       polymarket_tags    @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([market_id, tag_id])
   @@index([market_id], map: "idx_polymarket_market_tags_market_id")
@@ -210,9 +161,9 @@ model polymarket_market_tags {
 model polymarket_market_event_tags {
   market_event_id String
   tag_id          String
-  created_at      DateTime                     @default(now()) @db.Timestamptz(6)
-  market_events   polymarket_market_events     @relation(fields: [market_event_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tags            polymarket_tags              @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  created_at      DateTime                 @default(now()) @db.Timestamptz(6)
+  market_events   polymarket_market_events @relation(fields: [market_event_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags            polymarket_tags          @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([market_event_id, tag_id])
   @@index([market_event_id], map: "idx_polymarket_market_event_tags_market_event_id")
@@ -221,32 +172,22 @@ model polymarket_market_event_tags {
   @@schema("polymarket")
 }
 
-// ====================
-// KALSHI SCHEMA
-// ====================
-
 /// Kalshi Events table - matches Kalshi API events structure
 model kalshi_events {
-  // Core identifiers
-  event_ticker          String   @id
-  series_ticker         String
-  title                 String
-  sub_title            String?
-  category             String?
-
-  // Event properties
+  event_ticker           String             @id
+  series_ticker          String
+  title                  String
+  sub_title              String?
+  category               String?
   collateral_return_type String?
-  mutually_exclusive     Boolean? @default(false)
+  mutually_exclusive     Boolean?           @default(false)
   price_level_structure  String?
-  available_on_brokers   Boolean? @default(false)
-
-  // Relationships
-  markets               kalshi_markets[]
-
-  // Timestamps
-  created_at           DateTime @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime @default(now()) @db.Timestamptz(6)
-  last_updated         DateTime @default(now()) @db.Timestamptz(6)
+  available_on_brokers   Boolean?           @default(false)
+  created_at             DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime           @default(now()) @db.Timestamptz(6)
+  last_updated           DateTime           @default(now()) @db.Timestamptz(6)
+  event_date             kalshi_event_date?
+  markets                kalshi_markets[]
 
   @@index([event_ticker], map: "idx_kalshi_events_ticker")
   @@index([series_ticker], map: "idx_kalshi_events_series_ticker")
@@ -257,59 +198,86 @@ model kalshi_events {
 
 /// Kalshi Markets table - matches Kalshi API markets structure
 model kalshi_markets {
-  // Core identifiers
-  ticker                String   @id
-  event_ticker          String
-  market_type           String?
-  title                 String
-  subtitle              String?
-  yes_sub_title         String?
-  no_sub_title          String?
-
-  // Timestamps from API
-  open_time                    DateTime? @db.Timestamptz(6)
-  close_time                   DateTime? @db.Timestamptz(6)
-  expected_expiration_time     DateTime? @db.Timestamptz(6)
-  expiration_time              DateTime? @db.Timestamptz(6)
-  latest_expiration_time       DateTime? @db.Timestamptz(6)
-  settlement_timer_seconds     Int?
-
-  // Status and properties
-  status                       String?
-  response_price_units         String?
-  can_close_early             Boolean? @default(false)
-  rules_primary               String?
-
-  // Financial data
-  notional_value              Int?
-  notional_value_dollars      String?
-  yes_bid                     Float?
-  yes_ask                     Float?
-  no_bid                      Float?
-  no_ask                      Float?
-  last_price                  Float?
-  previous_price              Float?
-  previous_yes_bid            Float?
-  previous_yes_ask            Float?
-  previous_no_bid             Float?
-  previous_no_ask             Float?
-  volume                      Int?     @default(0)
-  liquidity                   Int?     @default(0)
-  liquidity_dollars           String?
-  open_interest               Int?     @default(0)
-
-  // Relationships
-  event                       kalshi_events @relation(fields: [event_ticker], references: [event_ticker], onDelete: Cascade)
-
-  // Timestamps
-  created_at                  DateTime @default(now()) @db.Timestamptz(6)
-  updated_at                  DateTime @default(now()) @db.Timestamptz(6)
-  last_updated                DateTime @default(now()) @db.Timestamptz(6)
+  ticker                   String        @id
+  event_ticker             String
+  market_type              String?
+  title                    String
+  subtitle                 String?
+  yes_sub_title            String?
+  no_sub_title             String?
+  open_time                DateTime?     @db.Timestamptz(6)
+  close_time               DateTime?     @db.Timestamptz(6)
+  expected_expiration_time DateTime?     @db.Timestamptz(6)
+  expiration_time          DateTime?     @db.Timestamptz(6)
+  latest_expiration_time   DateTime?     @db.Timestamptz(6)
+  settlement_timer_seconds Int?
+  status                   String?
+  response_price_units     String?
+  can_close_early          Boolean?      @default(false)
+  rules_primary            String?
+  notional_value           Int?
+  notional_value_dollars   String?
+  yes_bid                  Float?
+  yes_ask                  Float?
+  no_bid                   Float?
+  no_ask                   Float?
+  last_price               Float?
+  previous_price           Float?
+  previous_yes_bid         Float?
+  previous_yes_ask         Float?
+  previous_no_bid          Float?
+  previous_no_ask          Float?
+  volume                   Int?          @default(0)
+  liquidity                Int?          @default(0)
+  liquidity_dollars        String?
+  open_interest            Int?          @default(0)
+  created_at               DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime      @default(now()) @db.Timestamptz(6)
+  last_updated             DateTime      @default(now()) @db.Timestamptz(6)
+  event                    kalshi_events @relation(fields: [event_ticker], references: [event_ticker], onDelete: Cascade)
 
   @@index([ticker], map: "idx_kalshi_markets_ticker")
   @@index([event_ticker], map: "idx_kalshi_markets_event_ticker")
   @@index([status], map: "idx_kalshi_markets_status")
   @@index([market_type], map: "idx_kalshi_markets_type")
   @@map("markets")
+  @@schema("kalshi")
+}
+
+/// Polymarket Event Date table - extracted resolution dates
+model polymarket_event_date {
+  event_id       String                   @id
+  event_time_utc DateTime                 @db.Timestamptz(6)
+  confidence     Float
+  extracted_text String?
+  pattern_type   String?
+  timezone_abbr  String?
+  time_range     String?
+  created_at     DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime                 @default(now()) @db.Timestamptz(6)
+  market_event   polymarket_market_events @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@index([confidence], map: "idx_polymarket_event_date_confidence")
+  @@index([event_time_utc], map: "idx_polymarket_event_date_time")
+  @@map("event_date")
+  @@schema("polymarket")
+}
+
+/// Kalshi Event Date table - extracted resolution dates
+model kalshi_event_date {
+  event_id       String        @id
+  event_time_utc DateTime      @db.Timestamptz(6)
+  confidence     Float
+  extracted_text String?
+  pattern_type   String?
+  timezone_abbr  String?
+  time_range     String?
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  event          kalshi_events @relation(fields: [event_id], references: [event_ticker], onDelete: Cascade)
+
+  @@index([confidence], map: "idx_kalshi_event_date_confidence")
+  @@index([event_time_utc], map: "idx_kalshi_event_date_time")
+  @@map("event_date")
   @@schema("kalshi")
 }

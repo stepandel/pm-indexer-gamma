@@ -1,0 +1,22 @@
+{
+  "name": "@prediction-markets/date-extractor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Date extraction service for prediction market events",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "pnpm exec tsx --watch src/index.ts",
+    "start": "pnpm exec tsx src/index.ts"
+  },
+  "dependencies": {
+    "@prediction-markets/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@prediction-markets/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "extends": "@prediction-markets/tsconfig/node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "strictNullChecks": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
