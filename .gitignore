@@ -176,3 +176,6 @@ dist
 
 .claude
 /src/generated/prisma
+
+
+*/.turbo
