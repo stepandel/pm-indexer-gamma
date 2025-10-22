@@ -27,7 +27,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "vitest"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
@@ -37,6 +38,8 @@
   "devDependencies": {
     "@prediction-markets/tsconfig": "workspace:*",
     "@types/pg": "^8.15.5",
-    "typescript": "^5.9.2"
+    "@vitest/ui": "^4.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.0"
   }
 }
