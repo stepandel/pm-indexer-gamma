@@ -27,7 +27,7 @@ export class KalshiIndexer extends BaseIndexer {
       // Process each event individually
       for (const event of eventBatch) {
         // Filter out parlay events (multi-game extended events)
-        if (event.series_ticker === 'KXMVENFLMULTIGAMEEXTENDED') {
+        if (event.sub_title === 'MVE') {
           logger.debug(`Skipping parlay event: ${event.event_ticker}`);
           continue;
         }
