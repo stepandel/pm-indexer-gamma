@@ -285,8 +285,8 @@ export class DateExtractor {
         const targetYear = parseInt(yearStr);
         const previousYear = targetYear - 1;
 
-        // Last minute of previous year (Dec 31, 11:59 PM UTC)
-        const dateTime = new Date(Date.UTC(previousYear, 11, 31, 23, 59, 59));
+        // Last hour of previous year (Dec 31, 11:59 PM UTC)
+        const dateTime = new Date(Date.UTC(previousYear, 11, 31, 23, 59, 0));
 
         matches.push({
           dateTime,
