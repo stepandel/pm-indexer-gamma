@@ -281,3 +281,20 @@ model kalshi_event_date {
   @@map("event_date")
   @@schema("kalshi")
 }
+
+/// Event similarity matching table - tracks similar events across platforms
+model event_match_similarity {
+  id              String   @id @default(uuid())
+  polymarket_id   String
+  kalshi_ticker   String
+  sim_score       Float
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([polymarket_id, kalshi_ticker], map: "unique_event_match")
+  @@index([polymarket_id], map: "idx_event_match_similarity_polymarket_id")
+  @@index([kalshi_ticker], map: "idx_event_match_similarity_kalshi_ticker")
+  @@index([sim_score], map: "idx_event_match_similarity_score")
+  @@map("event_match_similarity")
+  @@schema("public")
+}
