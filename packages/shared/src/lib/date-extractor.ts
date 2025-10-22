@@ -58,9 +58,10 @@ export class DateExtractor {
     // "October 5, 9:00PM-9:15PM ET" or "October 5, 2025" or "October 5 at 9:00PM ET"
     // "Aug 22-28, 2021" or "From Aug 22-28, 2021"
     // Also supports abbreviated months: "Sep 2, 2025 at 3pm EDT"
+    // Note: Requires comma before year to avoid matching "December 2024" as "December 20, 24"
     const pattern1 = new RegExp(
       '(?:From\\s+)?\\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+' +
-      '(\\d{1,2})(?:-(\\d{1,2}))?(?:,\\s*(\\d{4}))?' +
+      '(\\d{1,2})(?:-(\\d{1,2}))?(?:,\\s+(\\d{4})|(?!\\d{2}))' + // Require comma before year OR ensure not followed by 2 more digits
       '(?:\\s*,?\\s*(?:at\\s+)?(\\d{1,2}(?::\\d{2})?\\s*[AP]M(?:\\s*-\\s*\\d{1,2}:\\d{2}(?:\\s*[AP]M)?)?)\\s*' +
       '(?:(ET|PT|CT|MT|EST|PST|CST|MST|EDT|PDT|CDT|MDT|UTC|GMT|AT|BT))\\b)?',
       'gi'
@@ -199,7 +200,7 @@ export class DateExtractor {
     // Pattern 4: "October 31" (current or next year) with optional time/timezone, including date ranges
     const pattern4 = new RegExp(
       '(?:From\\s+)?\\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+' +
-      '(\\d{1,2})(?:-(\\d{1,2}))?\\b(?!\\s*,\\s*\\d{4})' + // Negative lookahead to avoid matching pattern1
+      '(\\d{1,2})(?:-(\\d{1,2}))?\\b(?!\\s*,?\\s*\\d{4})' + // Negative lookahead to avoid matching when followed by year
       '(?:\\s*,?\\s*(?:at\\s+)?(\\d{1,2}(?::\\d{2})?\\s*[AP]M(?:\\s*-\\s*\\d{1,2}:\\d{2}(?:\\s*[AP]M)?)?)\\s*' +
       '(?:(ET|PT|CT|MT|EST|PST|CST|MST|EDT|PDT|CDT|MDT|UTC|GMT|AT|BT))\\b)?',
       'gi'
@@ -285,8 +286,8 @@ export class DateExtractor {
         const targetYear = parseInt(yearStr);
         const previousYear = targetYear - 1;
 
-        // Last minute of previous year (Dec 31, 11:59 PM UTC)
-        const dateTime = new Date(Date.UTC(previousYear, 11, 31, 23, 59, 59));
+        // Last hour of previous year (Dec 31, 11:59 PM UTC)
+        const dateTime = new Date(Date.UTC(previousYear, 11, 31, 23, 59, 0));
 
         matches.push({
           dateTime,
@@ -349,6 +350,43 @@ export class DateExtractor {
           matchedText: match[0],
           source,
           patternType: "by_year"
+        });
+      } catch (error) {
+        continue;
+      }
+    }
+
+    // Pattern 8: "Month YYYY" format - resolves to last day of that month
+    // "December 2024" -> Dec 31, 2024 11:59 PM
+    const pattern8 = new RegExp(
+      '\\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+(\\d{4})\\b',
+      'gi'
+    );
+
+    for (const match of text.matchAll(pattern8)) {
+      const monthName = match[1];
+      const yearStr = match[2];
+
+      if (!monthName || !yearStr) continue;
+
+      try {
+        const month = this.monthNames[monthName.toLowerCase() as keyof typeof this.monthNames];
+        if (!month) continue;
+
+        const year = parseInt(yearStr);
+
+        // Get the last day of the month
+        const lastDay = new Date(year, month, 0).getDate();
+
+        // Last minute of the month (11:59 PM UTC)
+        const dateTime = new Date(Date.UTC(year, month - 1, lastDay, 23, 59, 59));
+
+        matches.push({
+          dateTime,
+          confidence: 0.85,
+          matchedText: match[0],
+          source,
+          patternType: "month_year"
         });
       } catch (error) {
         continue;
