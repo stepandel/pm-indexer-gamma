@@ -10,6 +10,13 @@ interface EventMatch {
   sim_score: number;
 }
 
+interface MarketEntry {
+  id: string;
+  polymarket_id: string | null;
+  kalshi_ticker: string | null;
+  sim_score: number | null;
+}
+
 interface EventMatchResult {
   processed: number;
   matches: number;
@@ -155,6 +162,121 @@ class EventMatcher {
     }
   }
 
+  async populateMarketsTable(): Promise<EventMatchResult> {
+    if (!this.db) {
+      throw new Error('Database not available');
+    }
+
+    logger.info('Populating markets table with unified market data...');
+
+    try {
+      // First, clear the existing markets table
+      await this.db.query('DELETE FROM public.markets');
+
+      const populateQuery = `
+        INSERT INTO public.markets (id, polymarket_id, kalshi_ticker, sim_score, created_at, updated_at)
+        WITH scored AS (
+          SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY polymarket_id ORDER BY sim_score DESC) as pm_rank,
+            ROW_NUMBER() OVER (PARTITION BY kalshi_ticker ORDER BY sim_score DESC) as k_rank
+          FROM event_match_similarity
+        ),
+        filtered AS (
+          SELECT *
+          FROM scored
+          WHERE pm_rank = 1 AND k_rank = 1
+        ),
+        matched AS (
+          SELECT
+            id::uuid,
+            polymarket_id,
+            kalshi_ticker,
+            sim_score
+          FROM filtered
+        )
+        SELECT
+          id,
+          polymarket_id,
+          kalshi_ticker,
+          sim_score,
+          NOW(),
+          NOW()
+        FROM matched
+
+        UNION ALL
+
+        SELECT
+          uuid_generate_v4() as id,
+          pm.id as polymarket_id,
+          NULL as kalshi_ticker,
+          NULL as sim_score,
+          NOW(),
+          NOW()
+        FROM polymarket.market_events pm
+        WHERE NOT EXISTS (
+          SELECT 1 FROM matched m WHERE m.polymarket_id = pm.id
+        )
+
+        UNION ALL
+
+        SELECT
+          uuid_generate_v4() as id,
+          NULL as polymarket_id,
+          k.event_ticker as kalshi_ticker,
+          NULL as sim_score,
+          NOW(),
+          NOW()
+        FROM kalshi.events k
+        WHERE NOT EXISTS (
+          SELECT 1 FROM matched m WHERE m.kalshi_ticker = k.event_ticker
+        )
+      `;
+
+      const result = await this.db.query(populateQuery);
+      const rowCount = result.rowCount || 0;
+
+      logger.info(`Markets table populated with ${rowCount} entries`);
+
+      return {
+        processed: rowCount,
+        matches: rowCount,
+        errors: 0
+      };
+    } catch (error) {
+      logger.error('Failed to populate markets table:', error);
+      return {
+        processed: 0,
+        matches: 0,
+        errors: 1
+      };
+    }
+  }
+
+  async getMarketsStats() {
+    if (!this.db) {
+      throw new Error('Database not available');
+    }
+
+    try {
+      const statsQuery = `
+        SELECT
+          COUNT(*) as total_markets,
+          COUNT(CASE WHEN polymarket_id IS NOT NULL AND kalshi_ticker IS NOT NULL THEN 1 END) as matched_markets,
+          COUNT(CASE WHEN polymarket_id IS NOT NULL AND kalshi_ticker IS NULL THEN 1 END) as polymarket_only,
+          COUNT(CASE WHEN polymarket_id IS NULL AND kalshi_ticker IS NOT NULL THEN 1 END) as kalshi_only,
+          AVG(sim_score) as avg_similarity
+        FROM public.markets
+      `;
+
+      const result = await this.db.query(statsQuery);
+      return result.rows[0];
+    } catch (error) {
+      logger.error('Failed to get markets stats:', error);
+      return null;
+    }
+  }
+
   async getMatchingStats() {
     if (!this.db) {
       throw new Error('Database not available');
@@ -207,18 +329,36 @@ const main = async () => {
     // Process all event matching
     logger.info('🚀 Processing event matching');
     const results = await matcher.processEventMatching();
-    logger.info('📋 Results:');
+    logger.info('📋 Event Matching Results:');
     logger.info(`   Matches found/updated: ${results.matches}`);
     logger.info(`   Errors: ${results.errors}`);
 
     // Get stats after processing
     const statsAfter = await matcher.getMatchingStats();
     if (statsAfter) {
-      logger.info('📊 Stats after processing:');
+      logger.info('📊 Event Matching Stats:');
       logger.info(`   Total matches: ${statsAfter.total_matches}`);
       logger.info(`   Average similarity: ${parseFloat(statsAfter.avg_similarity || '0').toFixed(3)}`);
       logger.info(`   Unique Polymarket events: ${statsAfter.unique_polymarket_events}`);
       logger.info(`   Unique Kalshi events: ${statsAfter.unique_kalshi_events}`);
+    }
+
+    // Populate markets table
+    logger.info('🏪 Populating markets table');
+    const marketsResult = await matcher.populateMarketsTable();
+    logger.info('📋 Markets Population Results:');
+    logger.info(`   Total markets created: ${marketsResult.matches}`);
+    logger.info(`   Errors: ${marketsResult.errors}`);
+
+    // Get markets stats
+    const marketsStats = await matcher.getMarketsStats();
+    if (marketsStats) {
+      logger.info('📊 Markets Table Stats:');
+      logger.info(`   Total markets: ${marketsStats.total_markets}`);
+      logger.info(`   Matched markets: ${marketsStats.matched_markets}`);
+      logger.info(`   Polymarket only: ${marketsStats.polymarket_only}`);
+      logger.info(`   Kalshi only: ${marketsStats.kalshi_only}`);
+      logger.info(`   Average similarity: ${parseFloat(marketsStats.avg_similarity || '0').toFixed(3)}`);
     }
 
     logger.info('✓ Event matching completed successfully');

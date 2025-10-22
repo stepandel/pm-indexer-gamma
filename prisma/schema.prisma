@@ -304,3 +304,19 @@ model event_match_similarity {
   @@map("event_match_similarity")
   @@schema("public")
 }
+
+/// Markets table - unified view of all markets with match information
+model markets {
+  id              String  @id @default(uuid())
+  polymarket_id   String?
+  kalshi_ticker   String?
+  sim_score       Float?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([polymarket_id], map: "idx_markets_polymarket_id")
+  @@index([kalshi_ticker], map: "idx_markets_kalshi_ticker")
+  @@index([sim_score], map: "idx_markets_sim_score")
+  @@map("markets")
+  @@schema("public")
+}
