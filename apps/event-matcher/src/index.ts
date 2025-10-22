@@ -24,7 +24,7 @@ class EventMatcher {
 
     try {
       const matchQuery = `
-        INSERT INTO public.event_match_similarity (polymarket_id, kalshi_ticker, sim_score, created_at, updated_at)
+        INSERT INTO public.event_match_similarity (polymarket_id, kalshi_ticker, polymarket_title, kalshi_title, sim_score, created_at, updated_at)
         WITH polymarkets AS (
           SELECT
             pe.id,
@@ -46,6 +46,8 @@ class EventMatcher {
         SELECT
           p.id,
           k.event_ticker,
+          p.title,
+          k.title,
           similarity(p.title, k.title),
           NOW(),
           NOW()
@@ -55,6 +57,8 @@ class EventMatcher {
         WHERE similarity(p.title, k.title) > 0.6
         ON CONFLICT (polymarket_id, kalshi_ticker)
         DO UPDATE SET
+          polymarket_title = EXCLUDED.polymarket_title,
+          kalshi_title = EXCLUDED.kalshi_title,
           sim_score = EXCLUDED.sim_score,
           updated_at = EXCLUDED.updated_at
       `;
