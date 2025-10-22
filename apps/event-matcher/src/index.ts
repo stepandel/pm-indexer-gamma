@@ -2,6 +2,14 @@
 
 import { database, logger } from '@prediction-markets/shared';
 
+interface EventMatch {
+  polymarket_id: string;
+  polymarket_title: string;
+  kalshi_ticker: string;
+  kalshi_title: string;
+  sim_score: number;
+}
+
 interface EventMatchResult {
   processed: number;
   matches: number;
@@ -15,16 +23,15 @@ class EventMatcher {
     this.db = database;
   }
 
-  async processEventMatching(): Promise<EventMatchResult> {
+  async getMatchingEvents(): Promise<EventMatch[]> {
     if (!this.db) {
       throw new Error('Database not available');
     }
 
-    logger.info('Processing event matching (this may take up to a minute)...');
+    logger.info('Finding matching events (this may take up to a minute)...');
 
     try {
       const matchQuery = `
-        INSERT INTO public.event_match_similarity (polymarket_id, kalshi_ticker, polymarket_title, kalshi_title, sim_score, created_at, updated_at)
         WITH polymarkets AS (
           SELECT
             pe.id,
@@ -44,37 +51,102 @@ class EventMatcher {
           WHERE kd.event_time_utc IS NOT NULL
         )
         SELECT
-          p.id,
-          k.event_ticker,
-          p.title,
-          k.title,
-          similarity(p.title, k.title),
-          NOW(),
-          NOW()
+          p.id as polymarket_id,
+          p.title as polymarket_title,
+          k.event_ticker as kalshi_ticker,
+          k.title as kalshi_title,
+          similarity(p.title, k.title) as sim_score
         FROM polymarkets p
         JOIN kalshis k ON p.title % k.title
           AND ABS(EXTRACT(EPOCH FROM (p.event_time_utc - k.event_time_utc))) <= 86400
         WHERE similarity(p.title, k.title) > 0.6
-        ON CONFLICT (polymarket_id, kalshi_ticker)
-        DO UPDATE SET
-          polymarket_title = EXCLUDED.polymarket_title,
-          kalshi_title = EXCLUDED.kalshi_title,
-          sim_score = EXCLUDED.sim_score,
-          updated_at = EXCLUDED.updated_at
       `;
 
       const result = await this.db.query(matchQuery);
-      const matchCount = result.rowCount || 0;
+      const matches = result.rows as EventMatch[];
 
-      logger.info(`Event matching completed: ${matchCount} matches found/updated`);
+      logger.info(`Found ${matches.length} matching events`);
+      logger.info(JSON.stringify(matches[0], null, 2));
+
+      return matches;
+    } catch (error) {
+      logger.error('Failed to find matching events:', error);
+      throw error;
+    }
+  }
+
+  async upsertMatches(matches: EventMatch[]): Promise<EventMatchResult> {
+    if (!this.db) {
+      throw new Error('Database not available');
+    }
+
+    if (matches.length === 0) {
+      logger.info('No matches to upsert');
+      return { processed: 0, matches: 0, errors: 0 };
+    }
+
+    logger.info(`Upserting ${matches.length} matches to database...`);
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const match of matches) {
+        try {
+          const upsertQuery = `
+            INSERT INTO public.event_match_similarity (id, polymarket_id, kalshi_ticker, polymarket_title, kalshi_title, sim_score, created_at, updated_at)
+            VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, NOW(), NOW())
+            ON CONFLICT (polymarket_id, kalshi_ticker)
+            DO UPDATE SET
+              polymarket_title = EXCLUDED.polymarket_title,
+              kalshi_title = EXCLUDED.kalshi_title,
+              sim_score = EXCLUDED.sim_score,
+              updated_at = EXCLUDED.updated_at
+          `;
+
+          await this.db.query(upsertQuery, [
+            match.polymarket_id,
+            match.kalshi_ticker,
+            match.polymarket_title,
+            match.kalshi_title,
+            match.sim_score
+          ]);
+
+          successCount++;
+        } catch (error) {
+          logger.error(`Failed to upsert match ${match.polymarket_id} <-> ${match.kalshi_ticker}:`, error);
+          errorCount++;
+        }
+      }
+
+      logger.info(`Upsert completed: ${successCount} successful, ${errorCount} errors`);
 
       return {
-        processed: matchCount,
-        matches: matchCount,
-        errors: 0
+        processed: matches.length,
+        matches: successCount,
+        errors: errorCount
       };
     } catch (error) {
-      logger.error('Event matching failed:', error);
+      logger.error('Upsert operation failed:', error);
+      return {
+        processed: 0,
+        matches: 0,
+        errors: matches.length
+      };
+    }
+  }
+
+  async processEventMatching(): Promise<EventMatchResult> {
+    try {
+      // Step 1: Get matching events
+      const matches = await this.getMatchingEvents();
+
+      // Step 2: Upsert them to the database
+      const result = await this.upsertMatches(matches);
+
+      return result;
+    } catch (error) {
+      logger.error('Event matching process failed:', error);
       return {
         processed: 0,
         matches: 0,
