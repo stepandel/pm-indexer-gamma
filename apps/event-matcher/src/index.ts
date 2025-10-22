@@ -15,46 +15,57 @@ class EventMatcher {
     this.db = database;
   }
 
-  async processEventMatching(offset: number = 0, limit: number = 1000): Promise<EventMatchResult> {
+  async processEventMatching(): Promise<EventMatchResult> {
     if (!this.db) {
       throw new Error('Database not available');
     }
 
-    logger.info(`Processing event matching with offset ${offset}, limit ${limit}`);
+    logger.info('Processing event matching (this may take up to a minute)...');
 
     try {
       const matchQuery = `
         INSERT INTO public.event_match_similarity (polymarket_id, kalshi_ticker, sim_score, created_at, updated_at)
+        WITH polymarkets AS (
+          SELECT
+            pe.id,
+            pe.title,
+            pd.event_time_utc
+          FROM polymarket.market_events pe
+          LEFT JOIN polymarket.event_date pd ON pe.id = pd.event_id
+          WHERE pd.event_time_utc IS NOT NULL
+        ),
+        kalshis AS (
+          SELECT
+            ke.event_ticker,
+            ke.title,
+            kd.event_time_utc
+          FROM kalshi.events ke
+          LEFT JOIN kalshi.event_date kd ON ke.event_ticker = kd.event_id
+          WHERE kd.event_time_utc IS NOT NULL
+        )
         SELECT
           p.id,
-          ks.event_ticker,
-          ks.sim_score,
+          k.event_ticker,
+          similarity(p.title, k.title),
           NOW(),
           NOW()
-        FROM polymarket.market_events p
-        LEFT JOIN LATERAL (
-          SELECT
-            k.event_ticker,
-            similarity(p.title, k.title) as sim_score
-          FROM kalshi.events k
-          WHERE difference(lower(unaccent(p.title)), lower(unaccent(k.title))) >= 4
-            AND similarity(p.title, k.title) > 0.6
-        ) ks ON true
-        WHERE ks.event_ticker IS NOT NULL
-        OFFSET $1 LIMIT $2
+        FROM polymarkets p
+        JOIN kalshis k ON p.title % k.title
+          AND ABS(EXTRACT(EPOCH FROM (p.event_time_utc - k.event_time_utc))) <= 86400
+        WHERE similarity(p.title, k.title) > 0.6
         ON CONFLICT (polymarket_id, kalshi_ticker)
         DO UPDATE SET
           sim_score = EXCLUDED.sim_score,
           updated_at = EXCLUDED.updated_at
       `;
 
-      const result = await this.db.query(matchQuery, [offset, limit]);
+      const result = await this.db.query(matchQuery);
       const matchCount = result.rowCount || 0;
 
       logger.info(`Event matching completed: ${matchCount} matches found/updated`);
 
       return {
-        processed: limit,
+        processed: matchCount,
         matches: matchCount,
         errors: 0
       };
@@ -93,30 +104,6 @@ class EventMatcher {
     }
   }
 
-  async processFullMatching(batchSize: number = 1000): Promise<void> {
-    logger.info('Starting full event matching process');
-
-    let offset = 0;
-    let totalMatches = 0;
-    let totalErrors = 0;
-
-    while (true) {
-      const result = await this.processEventMatching(offset, batchSize);
-
-      totalMatches += result.matches;
-      totalErrors += result.errors;
-
-      if (result.matches === 0) {
-        logger.info('No more matches found, stopping');
-        break;
-      }
-
-      offset += batchSize;
-      logger.info(`Progress: ${offset} events processed, ${totalMatches} total matches`);
-    }
-
-    logger.info(`Full matching completed: ${totalMatches} total matches, ${totalErrors} errors`);
-  }
 }
 
 const main = async () => {
@@ -131,12 +118,6 @@ const main = async () => {
       process.exit(1);
     }
 
-    // Parse command line arguments
-    const args = process.argv.slice(2);
-    const mode = args.find(arg => arg.startsWith('--mode='))?.split('=')[1] || 'batch';
-    const offset = parseInt(args.find(arg => arg.startsWith('--offset='))?.split('=')[1] || '0');
-    const limit = parseInt(args.find(arg => arg.startsWith('--limit='))?.split('=')[1] || '1000');
-
     // Get stats before processing
     const statsBefore = await matcher.getMatchingStats();
     if (statsBefore) {
@@ -147,24 +128,12 @@ const main = async () => {
       logger.info(`   Unique Kalshi events: ${statsBefore.unique_kalshi_events}`);
     }
 
-    switch (mode) {
-      case 'batch':
-        logger.info(`🚀 Processing batch of ${limit} events starting at offset ${offset}`);
-        const results = await matcher.processEventMatching(offset, limit);
-        logger.info('📋 Batch Results:');
-        logger.info(`   Processed: ${results.processed} events`);
-        logger.info(`   Matches found: ${results.matches}`);
-        logger.info(`   Errors: ${results.errors}`);
-        break;
-
-      case 'full':
-        await matcher.processFullMatching(limit);
-        break;
-
-      default:
-        logger.error(`Invalid mode: ${mode}. Available modes: batch, full`);
-        process.exit(1);
-    }
+    // Process all event matching
+    logger.info('🚀 Processing event matching');
+    const results = await matcher.processEventMatching();
+    logger.info('📋 Results:');
+    logger.info(`   Matches found/updated: ${results.matches}`);
+    logger.info(`   Errors: ${results.errors}`);
 
     // Get stats after processing
     const statsAfter = await matcher.getMatchingStats();
