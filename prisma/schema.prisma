@@ -281,3 +281,42 @@ model kalshi_event_date {
   @@map("event_date")
   @@schema("kalshi")
 }
+
+/// Event similarity matching table - tracks similar events across platforms
+model event_match_similarity {
+  id               String   @id @default(uuid())
+  polymarket_id    String
+  kalshi_ticker    String
+  polymarket_title String
+  kalshi_title     String
+  sim_score        Float
+  manual_override  Boolean  @default(false)
+  is_similar       Boolean?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([polymarket_id, kalshi_ticker], map: "unique_event_match")
+  @@index([polymarket_id], map: "idx_event_match_similarity_polymarket_id")
+  @@index([kalshi_ticker], map: "idx_event_match_similarity_kalshi_ticker")
+  @@index([sim_score], map: "idx_event_match_similarity_score")
+  @@index([manual_override], map: "idx_event_match_similarity_manual_override")
+  @@index([is_similar], map: "idx_event_match_similarity_is_similar")
+  @@map("event_match_similarity")
+  @@schema("public")
+}
+
+/// Markets table - unified view of all markets with match information
+model markets {
+  id              String  @id @default(uuid())
+  polymarket_id   String?
+  kalshi_ticker   String?
+  sim_score       Float?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([polymarket_id], map: "idx_markets_polymarket_id")
+  @@index([kalshi_ticker], map: "idx_markets_kalshi_ticker")
+  @@index([sim_score], map: "idx_markets_sim_score")
+  @@map("markets")
+  @@schema("public")
+}

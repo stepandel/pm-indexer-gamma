@@ -9,23 +9,23 @@ describe('DateExtractor', () => {
       const results = extractor.extractDatesFromText('December 2024', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('December 2024');
-      expect(results[0].patternType).toBe('month_year');
-      expect(results[0].confidence).toBe(0.85);
-      expect(results[0].dateTime.getUTCFullYear()).toBe(2024);
-      expect(results[0].dateTime.getUTCMonth()).toBe(11); // December = 11
-      expect(results[0].dateTime.getUTCDate()).toBe(31); // Last day of December
+      expect(results[0]?.matchedText).toBe('December 2024');
+      expect(results[0]?.patternType).toBe('month_year');
+      expect(results[0]?.confidence).toBe(0.85);
+      expect(results[0]?.dateTime.getUTCFullYear()).toBe(2024);
+      expect(results[0]?.dateTime.getUTCMonth()).toBe(11); // December = 11
+      expect(results[0]?.dateTime.getUTCDate()).toBe(31); // Last day of December
     });
 
     test('should correctly parse "Dec 2024" as end of December 2024', () => {
       const results = extractor.extractDatesFromText('Dec 2024', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('Dec 2024');
-      expect(results[0].patternType).toBe('month_year');
-      expect(results[0].confidence).toBe(0.85);
-      expect(results[0].dateTime.getFullYear()).toBe(2024);
-      expect(results[0].dateTime.getMonth()).toBe(11);
+      expect(results[0]?.matchedText).toBe('Dec 2024');
+      expect(results[0]?.patternType).toBe('month_year');
+      expect(results[0]?.confidence).toBe(0.85);
+      expect(results[0]?.dateTime.getFullYear()).toBe(2024);
+      expect(results[0]?.dateTime.getMonth()).toBe(11);
     });
 
     test('should parse other months correctly', () => {
@@ -39,9 +39,9 @@ describe('DateExtractor', () => {
       testCases.forEach(({ input, month, lastDay }) => {
         const results = extractor.extractDatesFromText(input, 'test');
         expect(results).toHaveLength(1);
-        expect(results[0].patternType).toBe('month_year');
-        expect(results[0].dateTime.getUTCMonth()).toBe(month);
-        expect(results[0].dateTime.getUTCDate()).toBe(lastDay);
+        expect(results[0]?.patternType).toBe('month_year');
+        expect(results[0]?.dateTime.getUTCMonth()).toBe(month as number);
+        expect(results[0]?.dateTime.getUTCDate()).toBe(lastDay);
       });
     });
   });
@@ -51,21 +51,21 @@ describe('DateExtractor', () => {
       const results = extractor.extractDatesFromText('December 20, 2024', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('December 20, 2024');
-      expect(results[0].patternType).toBe('month_day_year');
-      expect(results[0].confidence).toBe(0.9);
-      expect(results[0].dateTime.getUTCFullYear()).toBe(2024);
-      expect(results[0].dateTime.getUTCMonth()).toBe(11);
-      expect(results[0].dateTime.getUTCDate()).toBe(20);
+      expect(results[0]?.matchedText).toBe('December 20, 2024');
+      expect(results[0]?.patternType).toBe('month_day_year');
+      expect(results[0]?.confidence).toBe(0.9);
+      expect(results[0]?.dateTime.getUTCFullYear()).toBe(2024);
+      expect(results[0]?.dateTime.getUTCMonth()).toBe(11);
+      expect(results[0]?.dateTime.getUTCDate()).toBe(20);
     });
 
     test('should correctly parse "Dec 20, 2024"', () => {
       const results = extractor.extractDatesFromText('Dec 20, 2024', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('Dec 20, 2024');
-      expect(results[0].patternType).toBe('month_day_year');
-      expect(results[0].confidence).toBe(0.9);
+      expect(results[0]?.matchedText).toBe('Dec 20, 2024');
+      expect(results[0]?.patternType).toBe('month_day_year');
+      expect(results[0]?.confidence).toBe(0.9);
     });
 
     test('should parse date ranges correctly', () => {
@@ -85,12 +85,12 @@ describe('DateExtractor', () => {
       const results = extractor.extractDatesFromText('2025-10-08', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('2025-10-08');
-      expect(results[0].patternType).toBe('iso_date');
-      expect(results[0].confidence).toBe(0.95);
-      expect(results[0].dateTime.getUTCFullYear()).toBe(2025);
-      expect(results[0].dateTime.getUTCMonth()).toBe(9); // October = 9
-      expect(results[0].dateTime.getUTCDate()).toBe(8);
+      expect(results[0]?.matchedText).toBe('2025-10-08');
+      expect(results[0]?.patternType).toBe('iso_date');
+      expect(results[0]?.confidence).toBe(0.95);
+      expect(results[0]?.dateTime.getUTCFullYear()).toBe(2025);
+      expect(results[0]?.dateTime.getUTCMonth()).toBe(9); // October = 9
+      expect(results[0]?.dateTime.getUTCDate()).toBe(8);
     });
   });
 
@@ -99,34 +99,34 @@ describe('DateExtractor', () => {
       const results = extractor.extractDatesFromText('Before 2026', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('Before 2026');
-      expect(results[0].patternType).toBe('before_year');
-      expect(results[0].confidence).toBe(0.85);
-      expect(results[0].dateTime.getUTCFullYear()).toBe(2025); // Previous year
-      expect(results[0].dateTime.getUTCMonth()).toBe(11); // December
-      expect(results[0].dateTime.getUTCDate()).toBe(31); // Last day
+      expect(results[0]?.matchedText).toBe('Before 2026');
+      expect(results[0]?.patternType).toBe('before_year');
+      expect(results[0]?.confidence).toBe(0.85);
+      expect(results[0]?.dateTime.getUTCFullYear()).toBe(2025); // Previous year
+      expect(results[0]?.dateTime.getUTCMonth()).toBe(11); // December
+      expect(results[0]?.dateTime.getUTCDate()).toBe(31); // Last day
     });
 
     test('should correctly parse "In YYYY"', () => {
       const results = extractor.extractDatesFromText('In 2026', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('In 2026');
-      expect(results[0].patternType).toBe('in_year');
-      expect(results[0].confidence).toBe(0.85);
-      expect(results[0].dateTime.getUTCFullYear()).toBe(2026);
-      expect(results[0].dateTime.getUTCMonth()).toBe(11); // December
-      expect(results[0].dateTime.getUTCDate()).toBe(31); // Last day
+      expect(results[0]?.matchedText).toBe('In 2026');
+      expect(results[0]?.patternType).toBe('in_year');
+      expect(results[0]?.confidence).toBe(0.85);
+      expect(results[0]?.dateTime.getUTCFullYear()).toBe(2026);
+      expect(results[0]?.dateTime.getUTCMonth()).toBe(11); // December
+      expect(results[0]?.dateTime.getUTCDate()).toBe(31); // Last day
     });
 
     test('should correctly parse "By YYYY"', () => {
       const results = extractor.extractDatesFromText('By 2030', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].matchedText).toBe('By 2030');
-      expect(results[0].patternType).toBe('by_year');
-      expect(results[0].confidence).toBe(0.85);
-      expect(results[0].dateTime.getUTCFullYear()).toBe(2029); // Previous year
+      expect(results[0]?.matchedText).toBe('By 2030');
+      expect(results[0]?.patternType).toBe('by_year');
+      expect(results[0]?.confidence).toBe(0.85);
+      expect(results[0]?.dateTime.getUTCFullYear()).toBe(2029); // Previous year
     });
   });
 
@@ -158,10 +158,10 @@ describe('DateExtractor', () => {
 
       // Should only find the month_year pattern, not a false month_day_year pattern
       expect(results).toHaveLength(1);
-      expect(results[0].patternType).toBe('month_year');
-      expect(results[0].dateTime.getUTCFullYear()).toBe(2024);
-      expect(results[0].dateTime.getUTCMonth()).toBe(11); // December
-      expect(results[0].dateTime.getUTCDate()).toBe(31); // Last day of December
+      expect(results[0]?.patternType).toBe('month_year');
+      expect(results[0]?.dateTime.getUTCFullYear()).toBe(2024);
+      expect(results[0]?.dateTime.getUTCMonth()).toBe(11); // December
+      expect(results[0]?.dateTime.getUTCDate()).toBe(31); // Last day of December
 
       // Ensure no incorrect parsing happened
       const incorrectMatch = results.find(r =>
@@ -183,7 +183,7 @@ describe('DateExtractor', () => {
 
         // Should only have one result (the month_year pattern)
         expect(results).toHaveLength(1);
-        expect(results[0].patternType).toBe('month_year');
+        expect(results[0]?.patternType).toBe('month_year');
 
         // Should not have any erroneous month_day patterns
         const dayPatterns = results.filter(r =>
@@ -202,8 +202,8 @@ describe('DateExtractor', () => {
 
       // Check that we get the most specific date with highest confidence
       const bestMatch = results[0]; // Should be sorted by confidence
-      expect(bestMatch.confidence).toBeGreaterThanOrEqual(0.9);
-      expect(bestMatch.patternType).toMatch(/month_day_year/); // Could be with_time variant
+      expect(bestMatch?.confidence).toBeGreaterThanOrEqual(0.9);
+      expect(bestMatch?.patternType).toMatch(/month_day_year/); // Could be with_time variant
     });
   });
 
@@ -212,10 +212,10 @@ describe('DateExtractor', () => {
       const results = extractor.extractDatesFromText('September 2, 2025 at 3pm EDT', 'test');
 
       expect(results).toHaveLength(1);
-      expect(results[0].patternType).toBe('month_day_year_with_time');
-      expect(results[0].timeRange).toBe('3pm');
-      expect(results[0].timezoneAbbr).toBe('EDT');
-      expect(results[0].confidence).toBeGreaterThan(0.9);
+      expect(results[0]?.patternType).toBe('month_day_year_with_time');
+      expect(results[0]?.timeRange).toBe('3pm');
+      expect(results[0]?.timezoneAbbr).toBe('EDT');
+      expect(results[0]?.confidence).toBeGreaterThan(0.9);
     });
 
     test('should parse time ranges', () => {
